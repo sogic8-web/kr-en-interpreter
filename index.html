@@ -135,12 +135,32 @@
     z-index:18;
   }
   .quick-head{
-    width:100%;display:flex;align-items:center;gap:7px;
-    padding:7px 12px;font-size:12px;font-weight:700;color:var(--sub);
+    display:flex;align-items:center;gap:7px;
+    padding:4px 12px;
   }
-  .quick-head .q-ico{font-size:13px;}
-  .quick-head .chev{margin-left:auto;font-size:11px;color:var(--muted);transition:transform .18s;}
+  .qh-toggle{
+    flex:1 1 auto;min-width:0;
+    display:flex;align-items:center;gap:7px;
+    min-height:38px;padding:2px 0;
+    font-size:12px;font-weight:700;color:var(--sub);text-align:left;
+  }
+  .qh-toggle > span:nth-child(2){flex:0 0 auto;}
+  .quick-head .q-ico{font-size:13px;flex:0 0 auto;}
+  .qh-hint{
+    flex:1 1 auto;min-width:0;
+    color:#c3ccd8;font-weight:600;margin-left:2px;
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  }
+  .quick-head .chev{flex:0 0 auto;margin-left:auto;font-size:11px;color:var(--muted);transition:transform .18s;}
   .quick.open .quick-head .chev{transform:rotate(180deg);}
+  .qh-edit{
+    flex:0 0 auto;height:36px;padding:0 12px;border-radius:11px;
+    display:flex;align-items:center;gap:4px;
+    background:#eef3fa;border:1px solid #dbe4f0;
+    font-size:11.5px;font-weight:800;color:var(--blue-d);
+    white-space:nowrap;
+  }
+  .qh-edit:active{background:#e2ebf8;transform:scale(.97);}
   .quick-body{
     display:none;
     gap:7px;
@@ -166,6 +186,72 @@
   .q-chip:active{transform:scale(.97);background:#e6eef9;}
   .q-chip b{font-size:12px;color:var(--navy);font-weight:700;}
   .q-chip em{font-style:normal;font-size:10.5px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:block;max-width:210px;}
+  .q-empty{
+    flex:0 0 auto;align-self:center;
+    font-size:11.5px;line-height:1.5;color:var(--muted);
+    padding:4px 2px;white-space:nowrap;
+  }
+  .q-empty b{color:var(--blue-d);}
+
+  /* ── 퀵문구 편집 시트 ─────────────────────────────── */
+  .qp-item{
+    border:1px solid var(--border);border-radius:14px;
+    background:#fbfcfe;margin-bottom:9px;overflow:hidden;
+  }
+  .qp-item.editing{background:#fff;border-color:#bcd4f0;box-shadow:0 0 0 3px rgba(11,107,203,.07);}
+  .qp-main{display:flex;align-items:flex-start;gap:9px;padding:10px 10px 8px 11px;}
+  .qp-num{
+    flex:0 0 22px;width:22px;height:22px;border-radius:50%;
+    background:#e8eef8;color:var(--blue-d);font-size:11px;font-weight:800;
+    display:flex;align-items:center;justify-content:center;margin-top:1px;
+  }
+  .qp-text{flex:1 1 auto;min-width:0;}
+  .qp-text b{display:block;font-size:13.5px;font-weight:800;color:var(--navy);line-height:1.35;word-break:break-word;}
+  .qp-text em{display:block;font-style:normal;font-size:11.5px;color:var(--sub);line-height:1.45;margin-top:2px;word-break:break-word;}
+  .qp-text em.qp-mean{font-size:10.5px;color:var(--muted);margin-top:3px;}
+  .qp-move{display:flex;flex-direction:column;gap:5px;flex:0 0 auto;}
+  .qp-arrow{
+    width:40px;height:33px;border-radius:9px;
+    background:#fff;border:1px solid #dce6f2;color:var(--blue-d);
+    font-size:15px;font-weight:800;line-height:1;
+    display:flex;align-items:center;justify-content:center;
+  }
+  .qp-arrow:active{background:#eaf1fa;}
+  .qp-arrow:disabled{opacity:.3;color:var(--muted);border-color:#e6ecf4;}
+  .qp-tools{display:flex;gap:6px;padding:0 10px 10px 42px;}
+  .qp-btn{
+    flex:1 1 0;height:36px;border-radius:9px;
+    background:#fff;border:1px solid #dce6f2;color:var(--blue-d);
+    font-size:11.5px;font-weight:800;
+    display:flex;align-items:center;justify-content:center;gap:4px;
+  }
+  .qp-btn:active{background:#eaf1fa;}
+  .qp-btn.del{color:var(--danger);border-color:#f0d4d4;background:#fdf7f7;}
+  .qp-btn.del:active{background:#fbecec;}
+  .qp-form{padding:12px 12px 11px;}
+  .qp-form .field{margin-bottom:9px;}
+  .qp-form .field:last-child{margin-bottom:0;}
+  .qp-form textarea{
+    width:100%;min-height:70px;border-radius:11px;border:1px solid var(--border);
+    background:#fbfcfe;padding:9px 11px;font-size:14px;line-height:1.5;resize:vertical;
+  }
+  .qp-form textarea:focus{outline:none;border-color:#a9c8ee;background:#fff;}
+  .qp-label-row{display:flex;align-items:center;gap:6px;margin-bottom:5px;}
+  .qp-label-row > label{font-size:12.5px;font-weight:700;color:var(--sub);}
+  .qp-auto{
+    margin-left:auto;height:30px;padding:0 10px;border-radius:9px;
+    background:#eef7f1;border:1px solid #cfe8d9;color:var(--green-d);
+    font-size:11px;font-weight:800;white-space:nowrap;
+  }
+  .qp-auto:active{background:#e3f2e9;}
+  .qp-auto:disabled{opacity:.55;}
+  .qp-actions{display:flex;gap:7px;margin-top:11px;}
+  .qp-actions .btn-line{height:40px;font-size:12.5px;}
+  .qp-empty{
+    padding:20px 12px;text-align:center;font-size:12.5px;line-height:1.6;color:var(--muted);
+    background:#f8fafd;border:1px dashed #d7e2f0;border-radius:13px;
+  }
+  .qp-empty b{color:var(--blue-d);}
 
   /* ── 타임라인 ─────────────────────────────────────── */
   .timeline{
@@ -527,11 +613,14 @@
 
   <!-- 퀵문구 -->
   <div class="quick" id="quick">
-    <button class="quick-head" id="quickHead" aria-expanded="false">
-      <span class="q-ico">⚡</span><span>현장 퀵문구</span>
-      <span style="color:#c3ccd8;font-weight:600;margin-left:2px">탭하면 바로 영어로 말합니다</span>
-      <span class="chev">▼</span>
-    </button>
+    <div class="quick-head">
+      <button class="qh-toggle" id="quickHead" aria-expanded="false">
+        <span class="q-ico">⚡</span><span>현장 퀵문구</span>
+        <span class="qh-hint">탭하면 바로 영어로 말합니다</span>
+        <span class="chev">▼</span>
+      </button>
+      <button class="qh-edit" id="quickEditBtn" aria-label="퀵문구 편집">✎ 편집</button>
+    </div>
     <div class="quick-body" id="quickBody"></div>
   </div>
 
@@ -667,7 +756,7 @@
       <div class="sect">
         <h3>데이터</h3>
         <button class="btn-line danger" id="btnClearAll">대화·설정 모두 지우기</button>
-        <p class="hint">대화 내용은 이 브라우저 메모리에만 있고, 새로고침하면 사라집니다.</p>
+        <p class="hint">대화 내용은 이 브라우저 메모리에만 있고, 새로고침하면 사라집니다. 퀵문구는 이 기기에 저장되며, 초기화하면 기본 8개로 돌아갑니다.</p>
       </div>
     </div>
   </div>
@@ -689,6 +778,7 @@
             <li><span class="a-flag">🇺🇸</span> <b>영어로 듣기</b> — 탭하고 상대에게 말을 걸면 영어 인식 + 한국어 번역</li>
             <li>말풍선 <b>🔊</b> 다시 듣기 · <b>확대</b> 로 상대에게 화면 보여주기</li>
             <li><b>연속 대화</b>를 켜면 내 말 → 상대 말 → 내 말 순서로 자동 전환됩니다</li>
+            <li><b>⚡ 현장 퀵문구</b>는 <b>✎ 편집</b>에서 문구·순서를 바꾸고 새로 추가할 수 있습니다(한국어만 적고 <b>자동 영작</b> 가능)</li>
           </ol>
         </div>
       </div>
@@ -716,6 +806,46 @@
           <p>기본 엔진은 <b>MyMemory</b>(API 키 불필요)로 가볍게 동작하고, 설정에서 <b>OpenAI·Gemini 키</b>를 넣으면 컨퍼런스 통역 전용 프롬프트로 문장이 훨씬 자연스러워집니다.</p>
         </div>
       </div>
+    </div>
+  </div>
+</div>
+
+<!-- 퀵문구 편집 -->
+<div class="modal" id="quickEditModal">
+  <div class="sheet">
+    <div class="sheet-head">
+      <h2>현장 퀵문구 편집</h2>
+      <button class="x" data-close="quickEditModal" aria-label="닫기">✕</button>
+    </div>
+    <div class="sheet-body">
+      <p class="hint" style="margin:0 0 12px">탭하면 바로 영어로 표시·재생되는 문구입니다. <b>↑↓</b>로 순서를 바꾸고, 이 기기에 자동 저장됩니다.</p>
+      <div id="qpList"></div>
+
+      <button class="btn-line" id="qpAddToggle" style="margin-top:2px">+ 새 퀵문구 추가</button>
+      <div class="qp-form" id="qpAddForm" style="display:none;border:1px solid var(--border);border-radius:14px;margin-top:10px;background:#fff">
+        <div class="field">
+          <label for="qpNewName">① 버튼 이름 (한국어 짧은 제목)</label>
+          <input type="text" id="qpNewName" maxlength="20" placeholder="예: 천천히 부탁" autocomplete="off" spellcheck="false">
+        </div>
+        <div class="field">
+          <div class="qp-label-row">
+            <label for="qpNewEn">② 영어 문장</label>
+            <button class="qp-auto" type="button" id="qpNewAuto">✨ 자동 영작</button>
+          </div>
+          <textarea id="qpNewEn" maxlength="300" placeholder="Could you speak a little more slowly, please?" spellcheck="false"></textarea>
+        </div>
+        <div class="field">
+          <label for="qpNewKo">③ 한국어 뜻 (선택 · 자동 영작에 사용)</label>
+          <input type="text" id="qpNewKo" maxlength="60" placeholder="예: 조금 천천히 말해 주시겠어요?" autocomplete="off">
+        </div>
+        <div class="qp-actions">
+          <button class="btn-line primary" id="qpNewSave" style="flex:1">추가하기</button>
+        </div>
+      </div>
+
+      <div style="height:14px"></div>
+      <button class="btn-line" id="qpRestore">↺ 기본 8개 문구로 복원</button>
+      <p class="hint" style="margin-top:6px">실수로 지웠거나 순서가 엉켰을 때 누르면 원래 SAS Innovate 기본 문구로 돌아갑니다.</p>
     </div>
   </div>
 </div>
@@ -1611,20 +1741,61 @@
     state.hugeSize = Math.max(22, state.hugeSize - 4); applyHugeSize();
   });
 
-  /* ───────── 퀵문구 ───────── */
-  var QUICK = [
-    { ko: '자기소개', en: "Hello, I'm Gijun Yoon from the Ministry of Data and Statistics in Korea." },
-    { ko: '양해 구하기', en: "Excuse me, I'm using a live translation app so we can talk smoothly." },
-    { ko: 'SDC 소개', en: "We operate an on-premise agentic AI connecting Gemma 4 and SAS Viya in an air-gapped environment." },
-    { ko: '보안 설명', en: "Our system automatically masks small cells where N is less than 3 to protect statistical confidentiality." },
-    { ko: '천천히 부탁', en: "Could you speak a little more slowly, please?" },
-    { ko: '세션 문의', en: "How did you handle metadata integration in SAS Viya?" },
-    { ko: '명함·LinkedIn', en: "May I exchange business cards or LinkedIn with you?" },
-    { ko: '감사 인사', en: "Thank you for your time. It was great talking with you." }
+  /* ───────── 퀵문구 (추가·수정·삭제·순서·저장) ───────── */
+  var QUICK_KEY = 'kim_sdc_quick_phrases_v1';
+  var DEFAULT_QUICK = [
+    { ko: '자기소개', en: "Hello, I'm Gijun Yoon from the Ministry of Data and Statistics in Korea.", mean: '' },
+    { ko: '양해 구하기', en: "Excuse me, I'm using a live translation app so we can talk smoothly.", mean: '' },
+    { ko: 'SDC 소개', en: "We operate an on-premise agentic AI connecting Gemma 4 and SAS Viya in an air-gapped environment.", mean: '' },
+    { ko: '보안 설명', en: "Our system automatically masks small cells where N is less than 3 to protect statistical confidentiality.", mean: '' },
+    { ko: '천천히 부탁', en: "Could you speak a little more slowly, please?", mean: '' },
+    { ko: '세션 문의', en: "How did you handle metadata integration in SAS Viya?", mean: '' },
+    { ko: '명함·LinkedIn', en: "May I exchange business cards or LinkedIn with you?", mean: '' },
+    { ko: '감사 인사', en: "Thank you for your time. It was great talking with you.", mean: '' }
   ];
 
+  function cloneDefaultQuick() {
+    return DEFAULT_QUICK.map(function (q) { return { ko: q.ko, en: q.en, mean: q.mean || '' }; });
+  }
+  function tidyEn(s) { return String(s == null ? '' : s).replace(/\s+/g, ' ').trim(); }
+
+  // 저장된 값 방어: 배열이 아닌 값·문장 없는 항목은 버린다. 빈 배열([])은 사용자가 모두 지운 상태로 본다.
+  function normalizeQuick(arr) {
+    if (!Array.isArray(arr)) return null;
+    var out = [];
+    for (var i = 0; i < arr.length; i++) {
+      var q = arr[i];
+      if (!q || typeof q !== 'object') continue;
+      var en = tidyEn(q.en);
+      if (!en) continue;
+      var ko = String(q.ko == null ? '' : q.ko).trim();
+      out.push({ ko: ko || en.slice(0, 16), en: en, mean: String(q.mean == null ? '' : q.mean).trim() });
+    }
+    return out;
+  }
+  function loadQuick() {
+    var raw = null;
+    try { raw = lsGet(QUICK_KEY); } catch (e) { raw = null; }
+    if (raw) {
+      try {
+        var arr = normalizeQuick(JSON.parse(raw));
+        if (arr) return arr;
+      } catch (e) { /* 손상된 값은 기본값으로 */ }
+    }
+    return cloneDefaultQuick();
+  }
+  function saveQuick() {
+    try { lsSet(QUICK_KEY, JSON.stringify(QUICK)); } catch (e) { }
+  }
+  var QUICK = loadQuick();
+
   function renderQuick() {
-    $('quickBody').innerHTML = QUICK.map(function (q, i) {
+    var body = $('quickBody');
+    if (!QUICK.length) {
+      body.innerHTML = '<div class="q-empty">퀵문구가 없습니다 — <b>✎ 편집</b>에서 추가하세요</div>';
+      return;
+    }
+    body.innerHTML = QUICK.map(function (q, i) {
       return '<button class="q-chip" data-q="' + i + '"><b>' + esc(q.ko) + '</b><em>' + esc(q.en) + '</em></button>';
     }).join('');
   }
@@ -1653,6 +1824,241 @@
       state.quickHinted = true;
       toast('영어 문장을 표시했습니다. 화면을 상대에게 보여 주거나 🔊 확대 보기를 쓰세요.', 2600);
     }
+  });
+
+  /* ───────── 퀵문구 편집 시트 ───────── */
+  var qpEdit = -1;      // 수정 중인 항목 인덱스 (-1 = 없음)
+  var qpBusy = false;   // 자동 영작 진행 중
+
+  function qpEditHtml(q, i) {
+    return '<div class="qp-item editing">' +
+      '<div class="qp-form">' +
+        '<div class="field">' +
+          '<label>① 버튼 이름 (한국어 짧은 제목)</label>' +
+          '<input type="text" data-f="ko" maxlength="20" value="' + esc(q.ko) + '" autocomplete="off" spellcheck="false">' +
+        '</div>' +
+        '<div class="field">' +
+          '<div class="qp-label-row"><label>② 영어 문장</label>' +
+            '<button class="qp-auto" type="button" data-act="auto" data-i="' + i + '">✨ 자동 영작</button>' +
+          '</div>' +
+          '<textarea data-f="en" maxlength="300" spellcheck="false">' + esc(q.en) + '</textarea>' +
+        '</div>' +
+        '<div class="field">' +
+          '<label>③ 한국어 뜻 (선택 · 자동 영작에 사용)</label>' +
+          '<input type="text" data-f="mean" maxlength="60" value="' + esc(q.mean) + '" autocomplete="off">' +
+        '</div>' +
+        '<div class="qp-actions">' +
+          '<button class="btn-line primary" data-act="save" data-i="' + i + '" style="flex:1">저장</button>' +
+          '<button class="btn-line" data-act="cancel" data-i="' + i + '" style="flex:0 0 86px">취소</button>' +
+        '</div>' +
+      '</div>' +
+    '</div>';
+  }
+
+  function qpItemHtml(q, i) {
+    return '<div class="qp-item">' +
+      '<div class="qp-main">' +
+        '<span class="qp-num">' + (i + 1) + '</span>' +
+        '<div class="qp-text">' +
+          '<b>' + esc(q.ko) + '</b>' +
+          '<em>' + esc(q.en) + '</em>' +
+          (q.mean ? '<em class="qp-mean">뜻 · ' + esc(q.mean) + '</em>' : '') +
+        '</div>' +
+        '<div class="qp-move">' +
+          '<button class="qp-arrow" data-act="up" data-i="' + i + '" aria-label="위로"' + (i === 0 ? ' disabled' : '') + '>↑</button>' +
+          '<button class="qp-arrow" data-act="down" data-i="' + i + '" aria-label="아래로"' + (i === QUICK.length - 1 ? ' disabled' : '') + '>↓</button>' +
+        '</div>' +
+      '</div>' +
+      '<div class="qp-tools">' +
+        '<button class="qp-btn" data-act="edit" data-i="' + i + '">✎ 수정</button>' +
+        '<button class="qp-btn del" data-act="del" data-i="' + i + '">🗑 삭제</button>' +
+      '</div>' +
+    '</div>';
+  }
+
+  function renderQpList() {
+    var list = $('qpList');
+    if (!list) return;
+    if (!QUICK.length) {
+      qpEdit = -1;
+      list.innerHTML = '<div class="qp-empty">퀵문구가 없습니다.<br>아래 <b>+ 새 퀵문구 추가</b> 또는 <b>기본 8개 문구로 복원</b>을 눌러 주세요.</div>';
+      return;
+    }
+    if (qpEdit >= QUICK.length) qpEdit = -1;
+    var html = '';
+    QUICK.forEach(function (q, i) {
+      html += (i === qpEdit) ? qpEditHtml(q, i) : qpItemHtml(q, i);
+    });
+    list.innerHTML = html;
+  }
+
+  function qpFormOf(el) {
+    return el && el.closest ? el.closest('.qp-item') : null;
+  }
+  function qpField(scope, name) {
+    return scope ? scope.querySelector('[data-f="' + name + '"]') : null;
+  }
+
+  function moveQuick(i, delta) {
+    var j = i + delta;
+    if (j < 0 || j >= QUICK.length) return;
+    var rowEl = $('qpList').children[i];
+    var beforeTop = rowEl ? rowEl.getBoundingClientRect().top : 0;
+    // 수정 중이면 입력 중인 초안을 잃지 않게 따로 담아 두었다가 다시 채운다
+    var draft = null;
+    if (qpEdit >= 0) {
+      var curItem = qpFormOf($('qpList').children[qpEdit]);
+      var ck = qpField(curItem, 'ko'), ce = qpField(curItem, 'en'), cm = qpField(curItem, 'mean');
+      if (ck && ce) draft = { ko: ck.value, en: ce.value, mean: cm ? cm.value : '' };
+    }
+    var t = QUICK[i]; QUICK[i] = QUICK[j]; QUICK[j] = t;
+    if (qpEdit === i) qpEdit = j;
+    else if (qpEdit === j) qpEdit = i;
+    saveQuick();
+    renderQpList();
+    renderQuick();
+    if (draft && qpEdit >= 0) {
+      var nk = qpField(qpFormOf($('qpList').children[qpEdit]), 'ko');
+      var ne = qpField(qpFormOf($('qpList').children[qpEdit]), 'en');
+      var nm = qpField(qpFormOf($('qpList').children[qpEdit]), 'mean');
+      if (nk) nk.value = draft.ko;
+      if (ne) ne.value = draft.en;
+      if (nm) nm.value = draft.mean;
+    }
+    // 방금 옮긴 항목이 손가락 아래 그대로 머무르게
+    var moved = $('qpList').children[j];
+    var sb = document.querySelector('#quickEditModal .sheet-body');
+    if (moved && sb) {
+      var afterTop = moved.getBoundingClientRect().top;
+      sb.scrollTop += (afterTop - beforeTop);
+    }
+  }
+
+  function deleteQuick(i) {
+    var q = QUICK[i];
+    if (!q) return;
+    if (!confirm('"' + q.ko + '" 퀵문구를 삭제할까요?\n(기본값 복원으로 되돌릴 수 있습니다)')) return;
+    QUICK.splice(i, 1);
+    if (qpEdit === i) qpEdit = -1;
+    else if (qpEdit > i) qpEdit--;
+    saveQuick();
+    renderQpList();
+    renderQuick();
+    toast('삭제했습니다. 기본값 복원으로 되돌릴 수 있습니다.', 2400);
+  }
+
+  function saveQpEdit(i, btn) {
+    var item = qpFormOf(btn);
+    if (!item) return;
+    var koEl = qpField(item, 'ko'), enEl = qpField(item, 'en'), meanEl = qpField(item, 'mean');
+    var ko = koEl ? koEl.value.trim() : '';
+    var en = tidyEn(enEl ? enEl.value : '');
+    if (!ko) { toast('① 버튼 이름을 입력하세요.', 2200); if (koEl) koEl.focus(); return; }
+    if (!en) { toast('② 영어 문장을 입력하거나 자동 영작을 눌러 주세요.', 2600); if (enEl) enEl.focus(); return; }
+    QUICK[i] = { ko: ko, en: en, mean: meanEl ? meanEl.value.trim() : '' };
+    qpEdit = -1;
+    saveQuick();
+    renderQpList();
+    renderQuick();
+    toast('수정했습니다.', 1800);
+  }
+
+  // 자동 영작: 한국어 뜻(없으면 버튼 이름)을 현재 설정된 번역 엔진으로 영어 문장으로
+  function autoWrite(btn, enEl, koEl, nameEl, idleLabel) {
+    if (qpBusy) return;
+    var src = koEl && koEl.value.trim() ? koEl.value.trim() : (nameEl ? nameEl.value.trim() : '');
+    if (!src) { toast('한국어 뜻이나 버튼 이름을 먼저 적어 주세요.', 2600); if (koEl) koEl.focus(); return; }
+    if (!enEl) return;
+    qpBusy = true;
+    btn.disabled = true;
+    btn.textContent = '영작 중…';
+    translate(src, 'ko', 'en').then(function (t) {
+      enEl.value = t;
+      toast('영어 문장을 채웠습니다. 필요하면 고쳐 쓰세요.', 2600);
+    }).catch(function (e) {
+      toast('자동 영작 실패 · ' + friendlyError(e), 3800);
+    }).then(function () {
+      qpBusy = false;
+      btn.disabled = false;
+      btn.textContent = idleLabel;
+    });
+  }
+
+  $('qpList').addEventListener('click', function (ev) {
+    var b = ev.target.closest ? ev.target.closest('[data-act]') : null;
+    if (!b) return;
+    var act = b.getAttribute('data-act');
+    var i = Number(b.getAttribute('data-i'));
+    if (act === 'up' || act === 'down') { moveQuick(i, act === 'up' ? -1 : 1); return; }
+    if (act === 'edit') {
+      if (qpEdit === i) return;
+      qpEdit = i;
+      renderQpList();
+      var opened = $('qpList').children[i];
+      var f = opened ? qpField(opened, 'ko') : null;
+      if (opened) opened.scrollIntoView({ block: 'nearest' });
+      return;
+    }
+    if (act === 'cancel') { qpEdit = -1; renderQpList(); return; }
+    if (act === 'save') { saveQpEdit(i, b); return; }
+    if (act === 'del') { deleteQuick(i); return; }
+    if (act === 'auto') {
+      var item = qpFormOf(b);
+      autoWrite(b, qpField(item, 'en'), qpField(item, 'mean'), qpField(item, 'ko'), '✨ 자동 영작');
+      return;
+    }
+  });
+
+  $('quickEditBtn').addEventListener('click', function (ev) {
+    ev.stopPropagation();
+    qpEdit = -1;
+    $('qpAddForm').style.display = 'none';
+    $('qpAddToggle').textContent = '+ 새 퀵문구 추가';
+    renderQpList();
+    openModal('quickEditModal');
+  });
+
+  // 새 퀵문구 추가 폼
+  $('qpAddToggle').addEventListener('click', function () {
+    var f = $('qpAddForm');
+    var show = (f.style.display === 'none' || !f.style.display);
+    f.style.display = show ? 'block' : 'none';
+    this.textContent = show ? '− 새 퀵문구 추가 접기' : '+ 새 퀵문구 추가';
+    if (show) {
+      setTimeout(function () { f.scrollIntoView({ block: 'nearest' }); }, 60);
+    }
+  });
+
+  function addQuick() {
+    var nameEl = $('qpNewName'), enEl = $('qpNewEn'), koEl = $('qpNewKo');
+    var ko = nameEl.value.trim();
+    var en = tidyEn(enEl.value);
+    if (!ko) { toast('① 버튼 이름을 입력하세요.', 2200); nameEl.focus(); return; }
+    if (!en) { toast('② 영어 문장을 입력하거나 자동 영작을 눌러 주세요.', 2600); enEl.focus(); return; }
+    QUICK.push({ ko: ko, en: en, mean: koEl.value.trim() });
+    qpEdit = -1;
+    saveQuick();
+    renderQpList();
+    renderQuick();
+    nameEl.value = ''; enEl.value = ''; koEl.value = '';
+    toast('퀵문구를 추가했습니다.', 1800);
+    var last = $('qpList').lastElementChild;
+    if (last) last.scrollIntoView({ block: 'nearest' });
+  }
+  $('qpNewSave').addEventListener('click', addQuick);
+  $('qpNewAuto').addEventListener('click', function () {
+    autoWrite(this, $('qpNewEn'), $('qpNewKo'), $('qpNewName'), '✨ 자동 영작');
+  });
+
+  // 기본값 복원
+  $('qpRestore').addEventListener('click', function () {
+    if (!confirm('기본 SAS Innovate 8개 문구로 되돌릴까요?\n지금 수정한 내용은 사라집니다.')) return;
+    QUICK = cloneDefaultQuick();
+    qpEdit = -1;
+    saveQuick();
+    renderQpList();
+    renderQuick();
+    toast('기본 문구 8개로 복원했습니다.', 2200);
   });
 
   /* ───────── 텍스트 입력 ───────── */
@@ -1830,11 +2236,17 @@
   });
 
   $('btnClearAll').addEventListener('click', function () {
-    if (!confirm('대화 내용과 저장된 설정·API 키를 모두 지울까요?')) return;
+    if (!confirm('대화 내용과 저장된 설정·API 키를 모두 지울까요?\n퀵문구도 기본 8개로 돌아갑니다.')) return;
     state.messages = [];
     renderAll();
     settings = Object.assign({}, DEFAULTS);
     lsDel(STORE_KEY);
+    // 퀵문구도 기본값으로 (편집 내용·순서 초기화)
+    QUICK = cloneDefaultQuick();
+    qpEdit = -1;
+    saveQuick();
+    renderQuick();
+    if ($('qpList')) renderQpList();
     syncSettingsUI();
     updateEngineLabel();
     paintToggles();
@@ -1894,7 +2306,16 @@
       return { def: GEMINI_MODEL_DEFAULT, candidates: GEMINI_MODEL_CANDIDATES.slice() };
     },
     openQuick: function () { $('quick').classList.add('open'); },
-    status: function (k, t) { setStatus(k, t); }
+    status: function (k, t) { setStatus(k, t); },
+    quickPhrases: function () {
+      return QUICK.map(function (q) { return { ko: q.ko, en: q.en, mean: q.mean }; });
+    },
+    quickEditOpen: function (i) {
+      qpEdit = (typeof i === 'number' ? i : -1);
+      renderQpList();
+      openModal('quickEditModal');
+    },
+    refreshQuick: function () { renderQuick(); renderQpList(); }
   };
 })();
 </script>
