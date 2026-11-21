@@ -612,14 +612,14 @@
           </div>
           <div class="field">
             <label for="geminiModel">모델</label>
-            <input type="text" id="geminiModel" list="geminiModelList" placeholder="gemini-flash-latest" autocomplete="off" spellcheck="false">
+            <input type="text" id="geminiModel" list="geminiModelList" placeholder="gemini-4-hydrogen" autocomplete="off" spellcheck="false">
             <datalist id="geminiModelList">
+              <option value="gemini-4-hydrogen"></option>
+              <option value="gemini-4-neon"></option>
               <option value="gemini-flash-latest"></option>
               <option value="gemini-3.8-flash"></option>
-              <option value="gemini-3.5-flash"></option>
-              <option value="gemini-3-flash-preview"></option>
             </datalist>
-            <p class="hint" style="margin-top:6px">기본값은 <code>gemini-flash-latest</code>입니다. 모델이 없거나 지원이 종료되면(404) 앱이 이 키로 쓸 수 있는 Flash 모델을 자동으로 찾아 다시 시도합니다.</p>
+            <p class="hint" style="margin-top:6px">기본값은 <code>gemini-4-hydrogen</code>입니다. 모델이 없거나 지원이 종료되면(404) 앱이 이 키로 쓸 수 있는 Gemini 4/3 텍스트 모델을 자동으로 찾아 다시 시도합니다.</p>
           </div>
         </div>
 
@@ -736,12 +736,18 @@
   function lsSet(k, v) { try { localStorage.setItem(k, v); } catch (e) { memStore[k] = v; } }
   function lsDel(k) { try { localStorage.removeItem(k); } catch (e) { delete memStore[k]; } }
 
-  /* Gemini 모델: 신규 API 키/프로젝트에서 gemini-2.5-* 계열은 404(no longer available)이므로
-     최신 Flash 별칭을 기본값으로 쓰고, 후보 목록을 datalist로 제공한다. */
-  var GEMINI_MODEL_DEFAULT = 'gemini-flash-latest';
+  /* Gemini 모델: Gemini 4.0(hydrogen·neon)을 기본값으로 쓰고, 후보 목록을 datalist로 제공한다.
+     gemini-2.5-* 계열은 신규 키/프로젝트에서 404(no longer available), gemini-flash-latest는
+     예전 기본값이므로 저장값이 이 둘 중 하나면 Gemini 4.0 기본값으로 올린다. */
+  var GEMINI_MODEL_DEFAULT = 'gemini-4-hydrogen';
   var GEMINI_MODEL_CANDIDATES = [
-    'gemini-flash-latest', 'gemini-3.8-flash', 'gemini-3.5-flash', 'gemini-3-flash-preview'
+    'gemini-4-hydrogen', 'gemini-4-neon', 'gemini-flash-latest', 'gemini-3.8-flash'
   ];
+  // 예전 세대 모델(지원 종료·예전 기본값) — 사용자가 직접 고른 값이 아니면 기본값으로 이전
+  function isLegacyGeminiModel(m) {
+    var id = String(m || '').trim();
+    return /^gemini-2\.5-/i.test(id) || /^gemini-flash-latest$/i.test(id);
+  }
 
   var DEFAULTS = {
     engine: 'basic',
@@ -766,11 +772,10 @@
         });
       }
     } catch (e) { /* 손상된 값은 무시 */ }
-    // 저장된 모델이 지원 종료된 gemini-2.5-* 계열이면 최신 Flash 별칭으로 자동 이전
+    // 저장값이 비었거나 gemini-2.5-*·gemini-flash-latest(예전 기본값)면 Gemini 4.0 기본값으로 이전.
+    // 사용자가 직접 입력한 다른 유효 모델(gemini-4-neon 등)은 그대로 둔다.
     var saved = String(settings.geminiModel || '').trim();
-    if (!saved) {
-      settings.geminiModel = GEMINI_MODEL_DEFAULT;
-    } else if (/^gemini-2\.5-/i.test(saved)) {
+    if (!saved || isLegacyGeminiModel(saved)) {
       settings.geminiModel = GEMINI_MODEL_DEFAULT;
       saveSettings();
     }
@@ -1042,7 +1047,15 @@
     return /NOT_FOUND|no longer available|is not found|not supported|unsupported|does not support generateContent|invalid model|model[^.]*not[^.]*exist/i.test(m);
   }
 
-  // 목록 응답에서 generateContent가 되는 Flash 계열 모델을 우선순위대로 추린다.
+  // gemini-4.1-flash → 401, gemini-3-flash → 300 처럼 세대·버전 순위를 뽑는다.
+  function geminiVersionRank(id) {
+    var m = /^gemini-(\d+)(?:\.(\d+))?/i.exec(id);
+    if (!m) return 0;
+    return parseInt(m[1], 10) * 100 + parseInt(m[2] || '0', 10);
+  }
+
+  // 목록 응답에서 generateContent가 되는 Gemini 4/3 텍스트 모델을 우선순위대로 추린다.
+  // 1) 권장 후보(기본값·neon·flash-latest·3.8-flash) 2) 그 밖의 gemini-4-* 3) gemini-3* (최신 우선)
   function pickGeminiModel(models) {
     var ids = [];
     (models || []).forEach(function (m) {
@@ -1050,20 +1063,27 @@
       if (!id) return;
       var methods = m.supportedGenerationMethods || m.supportedMethods || [];
       if (methods.length && methods.indexOf('generateContent') < 0) return;
-      if (/embedding|embed|imagen|image|tts|audio|live|veo/i.test(id)) return;
+      // 임베딩·이미지·음성·실시간 계열은 통역 텍스트 생성에 쓸 수 없다
+      if (/embedding|embed|imagen|image|tts|audio|live|veo|vision|aqa|learnlm/i.test(id)) return;
+      if (!/^gemini-/i.test(id)) return;
+      if (GEMINI_MODEL_CANDIDATES.indexOf(id) < 0 && !/^gemini-[43]/i.test(id)) return;
       if (ids.indexOf(id) < 0) ids.push(id);
     });
     var out = [];
     GEMINI_MODEL_CANDIDATES.forEach(function (c) {
       if (ids.indexOf(c) >= 0 && out.indexOf(c) < 0) out.push(c);
     });
-    ids.forEach(function (id) {
-      if (out.indexOf(id) < 0 && /flash/i.test(id)) out.push(id);
+    var rest = ids.filter(function (id) { return out.indexOf(id) < 0; });
+    rest.sort(function (a, b) {
+      var d = geminiVersionRank(b) - geminiVersionRank(a);
+      return d !== 0 ? d : (a < b ? -1 : a > b ? 1 : 0);
     });
-    // 경량(lite·8b·thinking) 모델은 뒤로
-    var main = out.filter(function (id) { return !/lite|8b|thinking/i.test(id); });
-    var light = out.filter(function (id) { return /lite|8b|thinking/i.test(id); });
-    return main.concat(light);
+    var ranked = out.concat(rest);
+    // 경량(lite·8b·thinking)과 미리보기 모델은 뒤로 — 발표용은 안정 판을 먼저
+    var light = /lite|8b|thinking|preview|exp/i;
+    var main = ranked.filter(function (id) { return !light.test(id); });
+    var tail = ranked.filter(function (id) { return light.test(id); });
+    return main.concat(tail);
   }
 
   function listGeminiModels(key) {
@@ -1083,9 +1103,15 @@
   }
 
   // 이 키가 실제로 지원하는 모델을 찾아 settings.geminiModel을 갱신한다.
-  function autoFixGeminiModel(key) {
+  // failed: 방금 404가 난 모델 — 후보에서 빼고 다음 모델을 고른다.
+  function autoFixGeminiModel(key, failed) {
     return listGeminiModels(key).then(function (models) {
-      var picked = pickGeminiModel(models)[0];
+      var list = pickGeminiModel(models);
+      if (failed) {
+        var without = list.filter(function (id) { return id !== failed; });
+        if (without.length) list = without;
+      }
+      var picked = list[0];
       if (!picked) throw new Error('NO_MODEL');
       settings.geminiModel = picked;
       saveSettings();
@@ -1130,8 +1156,8 @@
     var model = String(settings.geminiModel || '').trim() || GEMINI_MODEL_DEFAULT;
     return geminiRequest(text, from, to, model, key).catch(function (e) {
       if (!isGeminiModelError(e)) throw e;
-      // 모델 미지원·지원 종료 → 사용 가능한 Flash 모델로 바꿔 1회만 재시도
-      return autoFixGeminiModel(key).then(function (next) {
+      // 모델 미지원·지원 종료 → 이 키로 쓸 수 있는 Gemini 4/3 텍스트 모델로 바꿔 1회만 재시도
+      return autoFixGeminiModel(key, model).then(function (next) {
         return geminiRequest(text, from, to, next, key);
       }, function () { throw e; });
     });
@@ -1156,7 +1182,7 @@
     if (!navigator.onLine) return '인터넷 연결이 없습니다. 와이파이·데이터를 확인한 뒤 재시도하세요.';
     if (m === 'QUOTA') return '무료 번역 한도를 초과했습니다. 설정에서 OpenAI·Gemini 키를 넣거나 잠시 후 재시도하세요.';
     if (m === 'NO_KEY') return 'API 키가 없습니다. 설정에서 키를 입력하세요.';
-    if (m === 'NO_MODEL') return '이 Gemini 키로 사용할 수 있는 Flash 모델을 찾지 못했습니다. Google AI Studio에서 키와 프로젝트를 확인하세요.';
+    if (m === 'NO_MODEL') return '이 Gemini 키로 사용할 수 있는 Gemini 4/3 텍스트 모델을 찾지 못했습니다. Google AI Studio에서 키와 프로젝트를 확인하세요.';
     if (e && e.status === 404) return 'Gemini 모델을 찾을 수 없습니다(404). 사용 가능한 모델로 자동 전환했지만 실패했습니다. 설정에서 모델명을 확인하세요.';
     if (e && e.status === 400) return 'Gemini 요청이 거부되었습니다(400). API 키가 유효한지 확인하세요.';
     if (m === 'CONFIG') return '번역 서비스 설정 오류입니다. 잠시 후 재시도하세요.';
@@ -1768,14 +1794,20 @@
     settings.openaiKey = ($('openaiKey').value || '').trim();
     settings.openaiModel = ($('openaiModel').value || '').trim() || 'gpt-4o-mini';
     settings.geminiKey = ($('geminiKey').value || '').trim();
-    settings.geminiModel = ($('geminiModel').value || '').trim() || GEMINI_MODEL_DEFAULT;
-    if (/^gemini-2\.5-/i.test(settings.geminiModel)) settings.geminiModel = GEMINI_MODEL_DEFAULT;
-    if ($('geminiModel')) $('geminiModel').value = settings.geminiModel;
+    var model = ($('geminiModel').value || '').trim();
+    // 비었거나 지원 종료된 gemini-2.5-*면 Gemini 4.0 기본값으로. 그 밖에 직접 입력한 값은 유지
+    if (!model || /^gemini-2\.5-/i.test(model)) model = GEMINI_MODEL_DEFAULT;
+    settings.geminiModel = model;
+    if ($('geminiModel').value !== model) $('geminiModel').value = model;
     saveSettings();
   }
   ['openaiKey', 'openaiModel', 'geminiKey', 'geminiModel'].forEach(function (id) {
-    $(id).addEventListener('change', readKeyInputs);
-    $(id).addEventListener('blur', readKeyInputs);
+    var el = $(id);
+    if (!el) return;
+    // 붙여넣기 즉시 settings에 반영 — 모바일에서 키를 붙여넣고 blur 없이 테스트를 눌러도 키를 놓치지 않게
+    el.addEventListener('input', readKeyInputs);
+    el.addEventListener('change', readKeyInputs);
+    el.addEventListener('blur', readKeyInputs);
   });
 
   $('btnTest').addEventListener('click', function () {
@@ -1852,6 +1884,11 @@
     },
     clear: function () { state.messages = []; renderAll(); },
     settings: settings,
+    readKeyInputs: readKeyInputs,
+    pickModel: function (models) { return pickGeminiModel(models || []); },
+    modelInfo: function () {
+      return { def: GEMINI_MODEL_DEFAULT, candidates: GEMINI_MODEL_CANDIDATES.slice() };
+    },
     openQuick: function () { $('quick').classList.add('open'); },
     status: function (k, t) { setStatus(k, t); }
   };
