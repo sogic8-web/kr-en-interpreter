@@ -1838,6 +1838,8 @@
     syncSettingsUI();
     updateEngineLabel();
     paintToggles();
+    $('testResult').textContent = '';
+    $('testResult').className = 'status-inline';
     setStatus('idle');
     toast('초기화했습니다.', 1800);
   });
@@ -1885,7 +1887,7 @@
       addMessage({ dir: dir, src: src, dst: dst, kind: kind || 'speech', pending: false });
     },
     clear: function () { state.messages = []; renderAll(); },
-    settings: settings,
+    get settings() { return settings; },
     readKeyInputs: readKeyInputs,
     pickModel: function (models) { return pickGeminiModel(models || []); },
     modelInfo: function () {
