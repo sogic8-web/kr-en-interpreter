@@ -1794,11 +1794,13 @@
     settings.openaiKey = ($('openaiKey').value || '').trim();
     settings.openaiModel = ($('openaiModel').value || '').trim() || 'gpt-4o-mini';
     settings.geminiKey = ($('geminiKey').value || '').trim();
-    var model = ($('geminiModel').value || '').trim();
+    var modelEl = $('geminiModel');
+    var model = (modelEl.value || '').trim();
     // 비었거나 지원 종료된 gemini-2.5-*면 Gemini 4.0 기본값으로. 그 밖에 직접 입력한 값은 유지
     if (!model || /^gemini-2\.5-/i.test(model)) model = GEMINI_MODEL_DEFAULT;
     settings.geminiModel = model;
-    if ($('geminiModel').value !== model) $('geminiModel').value = model;
+    // 입력 중인 칸은 건드리지 않는다(타이핑 중 기본값이 끼어들어 글자가 붙는 일 방지). blur 때 정리된다.
+    if (modelEl !== document.activeElement && modelEl.value !== model) modelEl.value = model;
     saveSettings();
   }
   ['openaiKey', 'openaiModel', 'geminiKey', 'geminiModel'].forEach(function (id) {
