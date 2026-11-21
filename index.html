@@ -612,7 +612,14 @@
           </div>
           <div class="field">
             <label for="geminiModel">모델</label>
-            <input type="text" id="geminiModel" placeholder="gemini-2.5-flash" autocomplete="off" spellcheck="false">
+            <input type="text" id="geminiModel" list="geminiModelList" placeholder="gemini-flash-latest" autocomplete="off" spellcheck="false">
+            <datalist id="geminiModelList">
+              <option value="gemini-flash-latest"></option>
+              <option value="gemini-3.8-flash"></option>
+              <option value="gemini-3.5-flash"></option>
+              <option value="gemini-3-flash-preview"></option>
+            </datalist>
+            <p class="hint" style="margin-top:6px">기본값은 <code>gemini-flash-latest</code>입니다. 모델이 없거나 지원이 종료되면(404) 앱이 이 키로 쓸 수 있는 Flash 모델을 자동으로 찾아 다시 시도합니다.</p>
           </div>
         </div>
 
@@ -729,10 +736,17 @@
   function lsSet(k, v) { try { localStorage.setItem(k, v); } catch (e) { memStore[k] = v; } }
   function lsDel(k) { try { localStorage.removeItem(k); } catch (e) { delete memStore[k]; } }
 
+  /* Gemini 모델: 신규 API 키/프로젝트에서 gemini-2.5-* 계열은 404(no longer available)이므로
+     최신 Flash 별칭을 기본값으로 쓰고, 후보 목록을 datalist로 제공한다. */
+  var GEMINI_MODEL_DEFAULT = 'gemini-flash-latest';
+  var GEMINI_MODEL_CANDIDATES = [
+    'gemini-flash-latest', 'gemini-3.8-flash', 'gemini-3.5-flash', 'gemini-3-flash-preview'
+  ];
+
   var DEFAULTS = {
     engine: 'basic',
     openaiKey: '', openaiModel: 'gpt-4o-mini',
-    geminiKey: '', geminiModel: 'gemini-2.5-flash',
+    geminiKey: '', geminiModel: GEMINI_MODEL_DEFAULT,
     ttsAuto: true,
     koTTSForIncoming: false,
     ttsRate: 1,
@@ -752,6 +766,14 @@
         });
       }
     } catch (e) { /* 손상된 값은 무시 */ }
+    // 저장된 모델이 지원 종료된 gemini-2.5-* 계열이면 최신 Flash 별칭으로 자동 이전
+    var saved = String(settings.geminiModel || '').trim();
+    if (!saved) {
+      settings.geminiModel = GEMINI_MODEL_DEFAULT;
+    } else if (/^gemini-2\.5-/i.test(saved)) {
+      settings.geminiModel = GEMINI_MODEL_DEFAULT;
+      saveSettings();
+    }
   }
   function saveSettings() { lsSet(STORE_KEY, JSON.stringify(settings)); }
 
@@ -1012,10 +1034,68 @@
     });
   }
 
-  function translateGemini(text, from, to) {
-    var key = (settings.geminiKey || '').trim();
-    if (!key) return Promise.reject(new Error('NO_KEY'));
-    var model = (settings.geminiModel || 'gemini-2.5-flash').trim();
+  /* ───────── Gemini 모델 자동 호환(자가 복구) ───────── */
+  function isGeminiModelError(e) {
+    if (!e) return false;
+    if (e.status === 404) return true;
+    var m = String(e.message || '');
+    return /NOT_FOUND|no longer available|is not found|not supported|unsupported|does not support generateContent|invalid model|model[^.]*not[^.]*exist/i.test(m);
+  }
+
+  // 목록 응답에서 generateContent가 되는 Flash 계열 모델을 우선순위대로 추린다.
+  function pickGeminiModel(models) {
+    var ids = [];
+    (models || []).forEach(function (m) {
+      var id = String((m && (m.name || m.model)) || '').replace(/^models\//, '');
+      if (!id) return;
+      var methods = m.supportedGenerationMethods || m.supportedMethods || [];
+      if (methods.length && methods.indexOf('generateContent') < 0) return;
+      if (/embedding|embed|imagen|image|tts|audio|live|veo/i.test(id)) return;
+      if (ids.indexOf(id) < 0) ids.push(id);
+    });
+    var out = [];
+    GEMINI_MODEL_CANDIDATES.forEach(function (c) {
+      if (ids.indexOf(c) >= 0 && out.indexOf(c) < 0) out.push(c);
+    });
+    ids.forEach(function (id) {
+      if (out.indexOf(id) < 0 && /flash/i.test(id)) out.push(id);
+    });
+    // 경량(lite·8b·thinking) 모델은 뒤로
+    var main = out.filter(function (id) { return !/lite|8b|thinking/i.test(id); });
+    var light = out.filter(function (id) { return /lite|8b|thinking/i.test(id); });
+    return main.concat(light);
+  }
+
+  function listGeminiModels(key) {
+    var url = 'https://generativelanguage.googleapis.com/v1beta/models?pageSize=200&key=' +
+      encodeURIComponent(key);
+    return fetchWithTimeout(url, { method: 'GET' }, 12000).then(function (res) {
+      return res.json().catch(function () { return {}; }).then(function (data) {
+        if (!res.ok) {
+          var msg = (data && data.error && data.error.message) || ('HTTP ' + res.status);
+          var e = new Error(msg);
+          e.status = res.status;
+          throw e;
+        }
+        return (data && data.models) || [];
+      });
+    });
+  }
+
+  // 이 키가 실제로 지원하는 모델을 찾아 settings.geminiModel을 갱신한다.
+  function autoFixGeminiModel(key) {
+    return listGeminiModels(key).then(function (models) {
+      var picked = pickGeminiModel(models)[0];
+      if (!picked) throw new Error('NO_MODEL');
+      settings.geminiModel = picked;
+      saveSettings();
+      if ($('geminiModel')) $('geminiModel').value = picked;
+      toast('Gemini 모델을 ' + picked + '로 자동 변경했습니다.', 4200);
+      return picked;
+    });
+  }
+
+  function geminiRequest(text, from, to, model, key) {
     var url = 'https://generativelanguage.googleapis.com/v1beta/models/' +
       encodeURIComponent(model) + ':generateContent?key=' + encodeURIComponent(key);
     var body = {
@@ -1044,6 +1124,19 @@
     });
   }
 
+  function translateGemini(text, from, to) {
+    var key = (settings.geminiKey || '').trim();
+    if (!key) return Promise.reject(new Error('NO_KEY'));
+    var model = String(settings.geminiModel || '').trim() || GEMINI_MODEL_DEFAULT;
+    return geminiRequest(text, from, to, model, key).catch(function (e) {
+      if (!isGeminiModelError(e)) throw e;
+      // 모델 미지원·지원 종료 → 사용 가능한 Flash 모델로 바꿔 1회만 재시도
+      return autoFixGeminiModel(key).then(function (next) {
+        return geminiRequest(text, from, to, next, key);
+      }, function () { throw e; });
+    });
+  }
+
   function fetchWithTimeout(url, opts, ms) {
     var ctrl = typeof AbortController !== 'undefined' ? new AbortController() : null;
     if (ctrl) opts = Object.assign({}, opts, { signal: ctrl.signal });
@@ -1063,6 +1156,9 @@
     if (!navigator.onLine) return '인터넷 연결이 없습니다. 와이파이·데이터를 확인한 뒤 재시도하세요.';
     if (m === 'QUOTA') return '무료 번역 한도를 초과했습니다. 설정에서 OpenAI·Gemini 키를 넣거나 잠시 후 재시도하세요.';
     if (m === 'NO_KEY') return 'API 키가 없습니다. 설정에서 키를 입력하세요.';
+    if (m === 'NO_MODEL') return '이 Gemini 키로 사용할 수 있는 Flash 모델을 찾지 못했습니다. Google AI Studio에서 키와 프로젝트를 확인하세요.';
+    if (e && e.status === 404) return 'Gemini 모델을 찾을 수 없습니다(404). 사용 가능한 모델로 자동 전환했지만 실패했습니다. 설정에서 모델명을 확인하세요.';
+    if (e && e.status === 400) return 'Gemini 요청이 거부되었습니다(400). API 키가 유효한지 확인하세요.';
     if (m === 'CONFIG') return '번역 서비스 설정 오류입니다. 잠시 후 재시도하세요.';
     if (m === 'EMPTY') return '번역 결과를 받지 못했습니다. 재시도하세요.';
     if (m === 'UNTRANSLATED') return '번역 서비스가 이 문장을 번역하지 못했습니다. 다시 시도하거나 문장을 나눠 말해 주세요.';
@@ -1649,7 +1745,7 @@
     $('openaiKey').value = settings.openaiKey || '';
     $('openaiModel').value = settings.openaiModel || 'gpt-4o-mini';
     $('geminiKey').value = settings.geminiKey || '';
-    $('geminiModel').value = settings.geminiModel || 'gemini-2.5-flash';
+    $('geminiModel').value = settings.geminiModel || GEMINI_MODEL_DEFAULT;
     $('engineHint').textContent = settings.engine === 'basic'
       ? 'API 키 없이 바로 동작합니다. MyMemory 번역 + 컨퍼런스 용어 보정.'
       : (settings.engine === 'openai'
@@ -1672,7 +1768,9 @@
     settings.openaiKey = ($('openaiKey').value || '').trim();
     settings.openaiModel = ($('openaiModel').value || '').trim() || 'gpt-4o-mini';
     settings.geminiKey = ($('geminiKey').value || '').trim();
-    settings.geminiModel = ($('geminiModel').value || '').trim() || 'gemini-2.5-flash';
+    settings.geminiModel = ($('geminiModel').value || '').trim() || GEMINI_MODEL_DEFAULT;
+    if (/^gemini-2\.5-/i.test(settings.geminiModel)) settings.geminiModel = GEMINI_MODEL_DEFAULT;
+    if ($('geminiModel')) $('geminiModel').value = settings.geminiModel;
     saveSettings();
   }
   ['openaiKey', 'openaiModel', 'geminiKey', 'geminiModel'].forEach(function (id) {
