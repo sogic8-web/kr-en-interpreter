@@ -2429,10 +2429,24 @@
     if (raw) {
       try {
         var arr = normalizeQuick(JSON.parse(raw));
-        if (arr) return arr;
+        if (arr) return backfillMeans(arr);
       } catch (e) { /* 손상된 값은 기본값으로 */ }
     }
     return cloneDefaultQuick();
+  }
+
+  /* 예전 버전에서 저장한 퀵문구(한국어 뜻 없이 저장된 기본 문구)에 기본 뜻을 채워 준다.
+     사용자가 직접 고친 문구는 영문이 다르므로 건드리지 않는다. */
+  function backfillMeans(arr) {
+    if (!Array.isArray(arr)) return arr;
+    arr.forEach(function (q) {
+      if (String(q.mean || '').trim()) return;
+      var en = tidyEn(q.en).toLowerCase();
+      for (var i = 0; i < DEFAULT_QUICK.length; i++) {
+        if (tidyEn(DEFAULT_QUICK[i].en).toLowerCase() === en) { q.mean = DEFAULT_QUICK[i].mean; break; }
+      }
+    });
+    return arr;
   }
   function saveQuick() {
     try { lsSet(QUICK_KEY, JSON.stringify(QUICK)); } catch (e) { }
