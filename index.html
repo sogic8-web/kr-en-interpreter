@@ -3268,7 +3268,7 @@
     } else {
       var cfg = subCfg();
       var base = SUB.mode === 'whisper'
-        ? ('녹음 중 · Whisper ' + (settings.subLang === 'auto' ? '자동 감지' : cfg.name) + (SUB.silent ? ' · 무음' : ' · 수음 중'))
+        ? ('Whisper · ' + (settings.subLang === 'auto' ? '자동 감지' : cfg.name) + (SUB.silent ? ' · 무음' : ''))
         : '듣는 중 · ' + cfg.name;
       if (SUB.pending > 0) { cls = 'dot busy'; msg = base + ' · 번역 중…'; }
       else { cls = 'dot live'; msg = base; }
