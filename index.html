@@ -488,13 +488,14 @@
   .field input:focus,.field select:focus{outline:none;border-color:#a9c8ee;background:#fff;}
   .hint{font-size:11.5px;color:var(--muted);line-height:1.5;margin-top:5px;}
   .seg{
-    display:grid;grid-template-columns:repeat(3,1fr);gap:0;
-    background:#eef2f8;border-radius:12px;padding:3px;
+    display:grid;grid-template-columns:repeat(2,1fr);gap:4px;
+    background:#eef2f8;border-radius:12px;padding:4px;
     border:1px solid #e2e9f2;
   }
   .seg button{
     padding:9px 4px;border-radius:9px;
     font-size:12px;font-weight:700;color:var(--sub);
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
   }
   .seg button.on{background:#fff;color:var(--blue-d);box-shadow:0 1px 4px rgba(11,37,69,.12);}
   .row{display:flex;align-items:center;gap:10px;}
@@ -680,6 +681,7 @@
           <button data-engine="basic">기본(무료·즉시)</button>
           <button data-engine="openai">OpenAI</button>
           <button data-engine="gemini">Gemini</button>
+          <button data-engine="groq">Groq (무료 1,000회)</button>
         </div>
         <p class="hint" id="engineHint">API 키 없이 바로 동작합니다. MyMemory 번역 + 컨퍼런스 용어 보정.</p>
 
@@ -709,6 +711,24 @@
               <option value="gemini-3.8-flash"></option>
             </datalist>
             <p class="hint" style="margin-top:6px">기본값은 <code>gemini-4-hydrogen</code>입니다. 모델이 없거나 지원이 종료되면(404) 앱이 이 키로 쓸 수 있는 Gemini 4/3 텍스트 모델을 자동으로 찾아 다시 시도합니다.</p>
+          </div>
+        </div>
+
+        <div id="groqBox" style="display:none;margin-top:12px">
+          <div class="field">
+            <label for="groqKey">Groq API 키</label>
+            <input type="password" id="groqKey" placeholder="gsk_..." autocomplete="off" spellcheck="false">
+            <p class="hint" style="margin-top:6px"><code>console.groq.com/keys</code>에서 카드 없이 무료 발급 · 하루 1,000회</p>
+          </div>
+          <div class="field">
+            <label for="groqModel">모델</label>
+            <input type="text" id="groqModel" list="groqModelList" placeholder="openai/gpt-oss-120b" autocomplete="off" spellcheck="false">
+            <datalist id="groqModelList">
+              <option value="openai/gpt-oss-120b"></option>
+              <option value="openai/gpt-oss-20b"></option>
+              <option value="qwen/qwen3.8-27b"></option>
+            </datalist>
+            <p class="hint" style="margin-top:6px">기본값은 <code>openai/gpt-oss-120b</code>입니다. 무료 한도 안에서 초고속으로 번역합니다.</p>
           </div>
         </div>
 
@@ -803,7 +823,7 @@
       <div class="sect">
         <h3>번역 품질</h3>
         <div class="note">
-          <p>기본 엔진은 <b>MyMemory</b>(API 키 불필요)로 가볍게 동작하고, 설정에서 <b>OpenAI·Gemini 키</b>를 넣으면 컨퍼런스 통역 전용 프롬프트로 문장이 훨씬 자연스러워집니다.</p>
+          <p>기본 엔진은 <b>MyMemory</b>(API 키 불필요)로 가볍게 동작하고, 설정에서 <b>OpenAI·Gemini·Groq 키</b>를 넣으면 컨퍼런스 통역 전용 프롬프트로 문장이 훨씬 자연스러워집니다. Groq은 카드 없이 무료로 발급되며(하루 1,000회) 응답이 가장 빠릅니다.</p>
         </div>
       </div>
     </div>
@@ -879,10 +899,17 @@
     return /^gemini-2\.5-/i.test(id) || /^gemini-flash-latest$/i.test(id);
   }
 
+  /* Groq: OpenAI 호환 엔드포인트. 무료 티어 하루 1,000회·분당 한도가 있으며 카드 등록 없이 키를 발급받는다. */
+  var GROQ_MODEL_DEFAULT = 'openai/gpt-oss-120b';
+  var GROQ_MODEL_CANDIDATES = [
+    'openai/gpt-oss-120b', 'openai/gpt-oss-20b', 'qwen/qwen3.8-27b'
+  ];
+
   var DEFAULTS = {
     engine: 'basic',
     openaiKey: '', openaiModel: 'gpt-4o-mini',
     geminiKey: '', geminiModel: GEMINI_MODEL_DEFAULT,
+    groqKey: '', groqModel: GROQ_MODEL_DEFAULT,
     ttsAuto: true,
     koTTSForIncoming: false,
     ttsRate: 1,
@@ -907,6 +934,16 @@
     var saved = String(settings.geminiModel || '').trim();
     if (!saved || isLegacyGeminiModel(saved)) {
       settings.geminiModel = GEMINI_MODEL_DEFAULT;
+      saveSettings();
+    }
+    // Groq 모델: 저장값이 비었으면 기본 gpt-oss-120b로
+    if (!String(settings.groqModel || '').trim()) {
+      settings.groqModel = GROQ_MODEL_DEFAULT;
+      saveSettings();
+    }
+    // 알 수 없는 엔진 값이 저장돼 있으면 기본 엔진으로
+    if (['basic', 'openai', 'gemini', 'groq'].indexOf(settings.engine) < 0) {
+      settings.engine = 'basic';
       saveSettings();
     }
   }
@@ -1293,6 +1330,42 @@
     });
   }
 
+  /* ───────── 번역: Groq (무료 하루 1,000회) ───────── */
+  var GROQ_ENDPOINT = 'https://api.groq.com/openai/v1/chat/completions';
+
+  function translateGroq(text, from, to) {
+    var key = (settings.groqKey || '').trim();
+    if (!key) return Promise.reject(new Error('NO_KEY'));
+    var model = (settings.groqModel || '').trim() || GROQ_MODEL_DEFAULT;
+    var body = {
+      model: model,
+      temperature: 0.2,
+      max_tokens: 500,
+      messages: [
+        { role: 'system', content: to === 'en' ? SYS_KO_EN : SYS_EN_KO },
+        { role: 'user', content: text }
+      ]
+    };
+    return fetchWithTimeout(GROQ_ENDPOINT, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + key },
+      body: JSON.stringify(body)
+    }, 15000).then(function (res) {
+      return res.json().catch(function () { return {}; }).then(function (data) {
+        if (!res.ok) {
+          var msg = (data && data.error && data.error.message) || ('HTTP ' + res.status);
+          var e = new Error(msg);
+          e.status = res.status;
+          e.engine = 'groq';
+          throw e;
+        }
+        var t = data && data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content;
+        if (!t) throw new Error('EMPTY');
+        return cleanOut(t);
+      });
+    });
+  }
+
   function fetchWithTimeout(url, opts, ms) {
     var ctrl = typeof AbortController !== 'undefined' ? new AbortController() : null;
     if (ctrl) opts = Object.assign({}, opts, { signal: ctrl.signal });
@@ -1304,14 +1377,22 @@
   function translate(text, from, to) {
     if (settings.engine === 'openai') return translateOpenAI(text, from, to);
     if (settings.engine === 'gemini') return translateGemini(text, from, to);
+    if (settings.engine === 'groq') return translateGroq(text, from, to);
     return translateBasic(text, from, to);
   }
 
   function friendlyError(e) {
     var m = (e && e.message) || '';
     if (!navigator.onLine) return '인터넷 연결이 없습니다. 와이파이·데이터를 확인한 뒤 재시도하세요.';
-    if (m === 'QUOTA') return '무료 번역 한도를 초과했습니다. 설정에서 OpenAI·Gemini 키를 넣거나 잠시 후 재시도하세요.';
+    if (m === 'QUOTA') return '무료 번역 한도를 초과했습니다. 설정에서 OpenAI·Gemini·Groq 키를 넣거나 잠시 후 재시도하세요.';
     if (m === 'NO_KEY') return 'API 키가 없습니다. 설정에서 키를 입력하세요.';
+    if (e && e.engine === 'groq') {
+      if (e.status === 401) return 'Groq API 키가 올바르지 않습니다. 설정에서 gsk_ 키를 확인하세요.';
+      if (e.status === 429) return 'Groq 무료 한도(분당/일일)에 도달했습니다. 잠시 후 재시도하거나 다른 엔진을 쓰세요.';
+      if (e.status === 404) return 'Groq 모델명을 확인하세요. 설정의 모델 칸에서 목록에 있는 모델을 고르세요.';
+      if (e.status === 400) return 'Groq 요청이 거부되었습니다(400). 키와 모델명을 확인하세요.';
+      if (/decommission|not supported|does not exist|invalid_model/i.test(m)) return 'Groq 모델명을 확인하세요. 설정의 모델 칸에서 목록에 있는 모델을 고르세요.';
+    }
     if (m === 'NO_MODEL') return '이 Gemini 키로 사용할 수 있는 Gemini 4/3 텍스트 모델을 찾지 못했습니다. Google AI Studio에서 키와 프로젝트를 확인하세요.';
     if (e && e.status === 404) return 'Gemini 모델을 찾을 수 없습니다(404). 사용 가능한 모델로 자동 전환했지만 실패했습니다. 설정에서 모델명을 확인하세요.';
     if (e && e.status === 400) return 'Gemini 요청이 거부되었습니다(400). API 키가 유효한지 확인하세요.';
@@ -2174,15 +2255,20 @@
     });
     $('openaiBox').style.display = settings.engine === 'openai' ? 'block' : 'none';
     $('geminiBox').style.display = settings.engine === 'gemini' ? 'block' : 'none';
+    $('groqBox').style.display = settings.engine === 'groq' ? 'block' : 'none';
     $('openaiKey').value = settings.openaiKey || '';
     $('openaiModel').value = settings.openaiModel || 'gpt-4o-mini';
     $('geminiKey').value = settings.geminiKey || '';
     $('geminiModel').value = settings.geminiModel || GEMINI_MODEL_DEFAULT;
+    $('groqKey').value = settings.groqKey || '';
+    $('groqModel').value = settings.groqModel || GROQ_MODEL_DEFAULT;
     $('engineHint').textContent = settings.engine === 'basic'
       ? 'API 키 없이 바로 동작합니다. MyMemory 번역 + 컨퍼런스 용어 보정.'
       : (settings.engine === 'openai'
         ? 'OpenAI로 자연스러운 구어체 통역. 키를 입력하고 저장하세요.'
-        : 'Gemini로 자연어 통역. 키를 입력하고 저장하세요.');
+        : (settings.engine === 'gemini'
+          ? 'Gemini로 자연어 통역. 키를 입력하고 저장하세요.'
+          : 'Groq 무료 키로 초고속 통역. 카드 없이 발급, 하루 1,000회.'));
     paintToggles();
   }
 
@@ -2207,9 +2293,15 @@
     settings.geminiModel = model;
     // 입력 중인 칸은 건드리지 않는다(타이핑 중 기본값이 끼어들어 글자가 붙는 일 방지). blur 때 정리된다.
     if (modelEl !== document.activeElement && modelEl.value !== model) modelEl.value = model;
+    // Groq
+    settings.groqKey = ($('groqKey').value || '').trim();
+    var gModelEl = $('groqModel');
+    var gModel = (gModelEl.value || '').trim() || GROQ_MODEL_DEFAULT;
+    settings.groqModel = gModel;
+    if (gModelEl !== document.activeElement && gModelEl.value !== gModel) gModelEl.value = gModel;
     saveSettings();
   }
-  ['openaiKey', 'openaiModel', 'geminiKey', 'geminiModel'].forEach(function (id) {
+  ['openaiKey', 'openaiModel', 'geminiKey', 'geminiModel', 'groqKey', 'groqModel'].forEach(function (id) {
     var el = $(id);
     if (!el) return;
     // 붙여넣기 즉시 settings에 반영 — 모바일에서 키를 붙여넣고 blur 없이 테스트를 눌러도 키를 놓치지 않게
@@ -2257,7 +2349,7 @@
   });
 
   function updateEngineLabel() {
-    var map = { basic: '기본 엔진 · MyMemory', openai: 'AI 통역 · OpenAI', gemini: 'AI 통역 · Gemini' };
+    var map = { basic: '기본 엔진 · MyMemory', openai: 'AI 통역 · OpenAI', gemini: 'AI 통역 · Gemini', groq: 'AI 통역 · Groq (무료)' };
     $('engineLabel').textContent = map[settings.engine] || map.basic;
   }
 
@@ -2305,6 +2397,10 @@
     modelInfo: function () {
       return { def: GEMINI_MODEL_DEFAULT, candidates: GEMINI_MODEL_CANDIDATES.slice() };
     },
+    groqModelInfo: function () {
+      return { def: GROQ_MODEL_DEFAULT, candidates: GROQ_MODEL_CANDIDATES.slice() };
+    },
+    engine: function () { return settings.engine; },
     openQuick: function () { $('quick').classList.add('open'); },
     status: function (k, t) { setStatus(k, t); },
     quickPhrases: function () {
