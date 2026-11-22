@@ -585,6 +585,199 @@
   .hf-btn.grow{flex:1;}
   .hf-btn.sq{flex:0 0 48px;width:48px;font-size:16px;background:#fff;}
   .hf-btn:active{background:#e9f1fb;}
+
+  /* ── 모드 탭 (1:1 대화 ↔ 실시간 자막) ─────────────── */
+  .mode-tabs{
+    flex:0 0 auto;
+    display:flex;gap:4px;
+    padding:6px 10px;
+    background:rgba(255,255,255,.92);
+    backdrop-filter:blur(8px);
+    border-bottom:1px solid var(--border);
+    z-index:17;
+  }
+  .mode-tab{
+    flex:1 1 0;min-width:0;height:38px;border-radius:11px;
+    display:flex;align-items:center;justify-content:center;gap:5px;
+    font-size:12.5px;font-weight:800;letter-spacing:-.2px;
+    color:var(--sub);background:transparent;
+    white-space:nowrap;
+  }
+  .mode-tab .mt-ico{font-size:13px;}
+  .mode-tab.on{
+    background:var(--navy);color:#fff;
+    box-shadow:0 2px 8px rgba(11,37,69,.18);
+  }
+  .mode-tab.on.sub{background:linear-gradient(150deg,#0f172a,#1e293b);}
+  .mode-tab:active{transform:scale(.985);}
+
+  /* 모드별 화면 컨테이너 */
+  .view{flex:1 1 auto;min-height:0;display:none;flex-direction:column;}
+  .view.on{display:flex;}
+
+  /* ── 실시간 자막 모드 ─────────────────────────────── */
+  .view-sub{
+    background:#05080d;color:#fff;
+    --sub-size:22px;
+  }
+  .view-sub.size-large{--sub-size:28px;}
+  .view-sub.size-xlarge{--sub-size:36px;}
+
+  .sub-top{
+    flex:0 0 auto;display:flex;align-items:center;gap:8px;
+    padding:8px 12px;background:#0a1420;
+    border-bottom:1px solid #16273a;
+  }
+  .sub-status{display:flex;align-items:center;gap:7px;flex:1;min-width:0;}
+  .sub-status .dot{
+    width:8px;height:8px;flex:0 0 8px;border-radius:50%;
+    background:#46586c;
+  }
+  .sub-status .dot.live{background:#22c55e;box-shadow:0 0 0 0 rgba(34,197,94,.6);animation:subPulse 1.5s infinite;}
+  .sub-status .dot.busy{background:#3b82f6;box-shadow:0 0 0 0 rgba(59,130,246,.6);animation:subPulse 1.1s infinite;}
+  .sub-status .dot.err{background:#ef4444;}
+  @keyframes subPulse{
+    0%{box-shadow:0 0 0 0 rgba(34,197,94,.55);}
+    70%{box-shadow:0 0 0 7px rgba(34,197,94,0);}
+    100%{box-shadow:0 0 0 0 rgba(34,197,94,0);}
+  }
+  #subStatusText{
+    font-size:11.5px;font-weight:700;color:#93a9c0;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  }
+  .sub-size-btn{
+    flex:0 0 auto;height:32px;padding:0 10px;border-radius:9px;
+    display:flex;align-items:center;gap:4px;
+    background:#132234;border:1px solid #22384f;
+    font-size:11px;font-weight:800;color:#b8cde1;
+    white-space:nowrap;
+  }
+  .sub-size-btn b{color:#fff;font-weight:800;}
+  .sub-size-btn:active{background:#1a2c42;}
+
+  .sub-langs{
+    flex:0 0 auto;display:flex;gap:6px;
+    padding:8px 12px;background:#0a1420;
+    border-bottom:1px solid #16273a;
+    overflow-x:auto;overflow-y:hidden;
+    -webkit-overflow-scrolling:touch;
+    scrollbar-width:none;
+  }
+  .sub-langs::-webkit-scrollbar{display:none;}
+  .lang-chip{
+    flex:0 0 auto;height:34px;padding:0 11px;border-radius:999px;
+    display:flex;align-items:center;gap:3px;
+    background:#132234;border:1px solid #22384f;
+    font-size:12px;font-weight:800;color:#a3b8cc;
+    white-space:nowrap;
+  }
+  .lang-chip small{font-size:9.5px;font-weight:700;opacity:.7;}
+  .lang-chip.on{background:#1d4ed8;border-color:#3b82f6;color:#fff;box-shadow:0 2px 8px rgba(29,78,216,.4);}
+  .lang-chip.on small{opacity:.9;}
+  .lang-chip:active{transform:scale(.97);}
+
+  .sub-stage{
+    position:relative;
+    flex:1 1 auto;min-height:0;
+    overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;
+    padding:14px 14px 10px;
+    background:radial-gradient(680px 320px at 50% -60px,#0f2036 0%,#05080d 72%);
+  }
+  .sub-empty{
+    margin:auto;text-align:center;padding:26px 16px;
+    color:#6c8299;
+  }
+  .sub-empty .se-ico{font-size:34px;line-height:1;margin-bottom:10px;opacity:.9;}
+  .sub-empty h3{font-size:14px;font-weight:800;color:#b7cbde;margin-bottom:8px;letter-spacing:-.2px;}
+  .sub-empty p{font-size:12px;line-height:1.65;color:#6c8299;}
+  .sub-empty b{color:#7fb2ea;}
+
+  .sub-lines{display:flex;flex-direction:column;gap:15px;}
+  .sub-item{
+    border-left:3px solid rgba(59,130,246,.5);
+    padding-left:11px;
+    animation:subIn .2s ease-out;
+  }
+  @keyframes subIn{from{opacity:0;transform:translateY(7px);}to{opacity:1;transform:none;}}
+  .sub-src{
+    font-size:12.5px;line-height:1.45;
+    color:#7d94aa;
+    margin-bottom:3px;
+    word-break:break-word;
+  }
+  .sub-src .sub-tag{
+    display:inline-block;margin-left:6px;
+    font-size:9.5px;font-weight:800;letter-spacing:.2px;
+    color:#8fb2d6;background:rgba(143,178,214,.14);
+    border-radius:5px;padding:1px 5px;vertical-align:1.5px;
+  }
+  .sub-dst{
+    font-size:var(--sub-size);
+    line-height:1.34;font-weight:800;letter-spacing:-.3px;
+    color:#f8fbff;
+    word-break:break-word;white-space:pre-wrap;
+    text-shadow:0 1px 2px rgba(0,0,0,.55);
+  }
+  .sub-item.pending .sub-dst{color:#8fb6de;font-weight:600;}
+  .sub-item.pending .sub-dst .dots span{background:#8fb6de;}
+  .sub-dst.err{
+    font-size:13px;font-weight:600;line-height:1.45;color:#f9a8a8;
+    text-shadow:none;
+  }
+  .sub-jump{
+    position:sticky;bottom:0;
+    display:none;align-items:center;justify-content:center;gap:4px;
+    width:max-content;margin:12px auto 0;
+    height:32px;padding:0 13px;border-radius:999px;
+    background:rgba(37,99,235,.92);color:#fff;
+    font-size:11.5px;font-weight:800;
+    box-shadow:0 4px 14px rgba(0,0,0,.45);
+    z-index:2;
+  }
+  .sub-jump.show{display:flex;}
+
+  .sub-interim{
+    flex:0 0 auto;display:none;align-items:flex-start;gap:8px;
+    padding:8px 12px;
+    background:#0c1826;border-top:1px solid #16273a;
+  }
+  .sub-interim.show{display:flex;}
+  .sub-interim-lbl{
+    flex:0 0 auto;margin-top:2px;
+    font-size:9.5px;font-weight:800;letter-spacing:.4px;
+    color:#07101a;background:#22c55e;
+    border-radius:5px;padding:2px 6px;
+  }
+  .sub-interim-lbl.busy{background:#3b82f6;color:#fff;}
+  .sub-interim-text{
+    flex:1 1 auto;min-width:0;
+    font-size:13.5px;line-height:1.4;color:#c3d7ea;
+    overflow:hidden;display:-webkit-box;
+    -webkit-line-clamp:2;-webkit-box-orient:vertical;
+  }
+  .sub-interim-text em{font-style:normal;color:#7d94aa;font-size:12px;}
+
+  .sub-ctrl{
+    flex:0 0 auto;
+    display:grid;grid-template-columns:1.45fr 1fr 1fr;gap:8px;
+    padding:9px 12px calc(10px + env(safe-area-inset-bottom));
+    background:#0a1420;border-top:1px solid #16273a;
+  }
+  .sub-btn{
+    height:50px;border-radius:14px;
+    display:flex;align-items:center;justify-content:center;gap:5px;
+    background:#16283c;border:1px solid #22384f;
+    font-size:12.5px;font-weight:800;color:#cfe1f2;
+    white-space:nowrap;
+  }
+  .sub-btn:active{transform:scale(.98);}
+  .sub-btn.go{
+    background:linear-gradient(150deg,#16a34a,#0b7a3c);
+    border-color:#1f9d55;color:#fff;font-size:14px;
+    box-shadow:0 6px 16px rgba(6,80,40,.42);
+  }
+  .sub-btn.go.stop{background:linear-gradient(150deg,#dc2626,#991b1b);border-color:#b91c1c;box-shadow:0 6px 16px rgba(120,20,20,.4);}
+  .sub-btn:disabled{opacity:.45;}
 </style>
 </head>
 <body>
@@ -602,6 +795,15 @@
     <button class="icon-btn" id="btnHelp" aria-label="도움말" title="도움말">?</button>
     <button class="icon-btn" id="btnSettings" aria-label="설정" title="설정">⚙</button>
   </header>
+
+  <!-- 모드 탭 -->
+  <div class="mode-tabs" role="tablist" aria-label="모드 선택">
+    <button class="mode-tab on" id="tabChat" role="tab" aria-selected="true" data-view="chat"><span class="mt-ico">💬</span>1:1 대화</button>
+    <button class="mode-tab sub" id="tabSub" role="tab" aria-selected="false" data-view="sub"><span class="mt-ico">🎬</span>실시간 자막</button>
+  </div>
+
+  <!-- ── 1:1 대화 모드 ─────────────────────────────── -->
+  <div class="view view-chat on" id="viewChat">
 
   <!-- 상태 -->
   <div class="status-bar">
@@ -645,6 +847,48 @@
       <span class="a-top"><span class="a-flag">🇺🇸</span><span class="a-label">영어로 듣기</span></span>
       <span class="a-sub" id="subEn">탭 → 상대 영어 인식</span>
     </button>
+  </div>
+
+  </div><!-- /1:1 대화 모드 -->
+
+  <!-- ── 실시간 자막 모드 ──────────────────────────── -->
+  <div class="view view-sub size-normal" id="viewSub">
+    <div class="sub-top">
+      <div class="sub-status">
+        <span class="dot" id="subDot"></span>
+        <span id="subStatusText">대기 — ▶ 자막 시작을 누르세요</span>
+      </div>
+      <button class="sub-size-btn" id="subSizeBtn" aria-label="자막 글자 크기">가 <b id="subSizeLabel">보통</b></button>
+    </div>
+
+    <div class="sub-langs" id="subLangs" role="group" aria-label="듣기 언어">
+      <button class="lang-chip on" data-lang="en">영어<small>EN</small></button>
+      <button class="lang-chip" data-lang="ja">일본어<small>JA</small></button>
+      <button class="lang-chip" data-lang="zh">중국어<small>ZH</small></button>
+      <button class="lang-chip" data-lang="ko">한국어<small>KO</small></button>
+      <button class="lang-chip" data-lang="auto">🤖 자동 감지<small>Groq</small></button>
+    </div>
+
+    <div class="sub-stage" id="subStage">
+      <div class="sub-empty" id="subEmpty">
+        <div class="se-ico">🎬</div>
+        <h3>강연·대화를 실시간 자막으로</h3>
+        <p>듣기 언어를 고르고 <b>▶ 자막 시작</b>을 누르면<br>들리는 말을 한 문장씩 번역해 아래로 쌓아 줍니다.</p>
+      </div>
+      <div class="sub-lines" id="subLines"></div>
+      <button class="sub-jump" id="subJump">↓ 최신 자막</button>
+    </div>
+
+    <div class="sub-interim" id="subInterim">
+      <span class="sub-interim-lbl" id="subInterimLbl">인식 중</span>
+      <span class="sub-interim-text" id="subInterimText"></span>
+    </div>
+
+    <div class="sub-ctrl">
+      <button class="sub-btn go" id="subToggle">▶ 자막 시작</button>
+      <button class="sub-btn" id="subClear">자막 비우기</button>
+      <button class="sub-btn" id="subCopy">전체 복사</button>
+    </div>
   </div>
 </div>
 
@@ -803,6 +1047,18 @@
         </div>
       </div>
       <div class="sect">
+        <h3>🎬 실시간 자막 모드</h3>
+        <div class="note">
+          <ol>
+            <li>상단 <b>🎬 실시간 자막</b> 탭을 누르면 자막 화면으로 바뀝니다(다시 누르면 1:1 대화로).</li>
+            <li>듣기 언어를 고르고(기본 <b>영어 EN</b>) <b>▶ 자막 시작</b>을 누르면 들리는 말이 한 문장씩 번역되어 아래로 쌓입니다.</li>
+            <li>아직 들리는 중인 말은 화면 아래 <b>인식 중</b> 줄에 미리 보이고, 문장이 확정되면 설정한 번역 엔진(기본·Groq·Gemini·OpenAI)으로 바로 번역됩니다.</li>
+            <li><b>자동 감지</b>는 Groq Whisper로 4초씩 녹음해 언어를 판별합니다(Groq 키 필요). 키가 없으면 영어·일본어·중국어·한국어 중에서 고르세요.</li>
+            <li><b>가 보통/크게/특대</b>로 글자를 키우고, <b>전체 복사</b>로 자막을 메모에 붙여 넣을 수 있습니다.</li>
+          </ol>
+        </div>
+      </div>
+      <div class="sect">
         <h3>현장 팁</h3>
         <div class="note">
           <ul>
@@ -915,7 +1171,10 @@
     ttsRate: 1,
     keepAwake: true,
     autoTurn: false,
-    quickOpen: false
+    quickOpen: false,
+    // 실시간 자막 모드
+    subLang: 'en',        // en | ja | zh | ko | auto
+    subSize: 'normal'     // normal | large | xlarge
   };
   var settings = Object.assign({}, DEFAULTS);
 
@@ -956,7 +1215,8 @@
     busy: false,
     modalMsgId: null,
     hugeSize: 34,
-    seq: 0
+    seq: 0,
+    view: 'chat'          // 'chat' | 'sub'
   };
 
   /* ───────── 토스트 / 상태 표시 ───────── */
@@ -1174,6 +1434,23 @@
     'official statistics=국가승인통계. Keep SAS Viya, Gemma, SQL, API as is. ' +
     'Output ONLY the Korean translation, with no quotation marks and no commentary.';
 
+  /* 영어·한국어 외(일본어·중국어 등) 발화용 범용 통역 프롬프트 — 실시간 자막 모드에서 쓴다 */
+  var SYS_ANY_KO =
+    'You are a professional simultaneous interpreter. The following speech may be in English, Japanese or Chinese. ' +
+    'Translate it into natural, concise spoken Korean (해요체) for someone reading live lecture subtitles. ' +
+    'Keep names, numbers and technical terms accurate, and do not summarize or skip anything. ' +
+    'Output ONLY the Korean translation, with no quotation marks and no commentary.';
+  var SYS_ANY_EN =
+    'You are a professional simultaneous interpreter. The following speech may be in Korean, Japanese or Chinese. ' +
+    'Translate it into natural, concise spoken American English for live lecture subtitles. ' +
+    'Keep names, numbers and technical terms accurate, and do not summarize or skip anything. ' +
+    'Output ONLY the English translation, with no quotation marks and no commentary.';
+
+  function sysPrompt(from, to) {
+    if (to === 'en') return from === 'ko' ? SYS_KO_EN : SYS_ANY_EN;
+    return from === 'en' ? SYS_EN_KO : SYS_ANY_KO;
+  }
+
   function translateOpenAI(text, from, to) {
     var key = (settings.openaiKey || '').trim();
     if (!key) return Promise.reject(new Error('NO_KEY'));
@@ -1183,7 +1460,7 @@
       temperature: 0.2,
       max_tokens: 500,
       messages: [
-        { role: 'system', content: to === 'en' ? SYS_KO_EN : SYS_EN_KO },
+        { role: 'system', content: sysPrompt(from, to) },
         { role: 'user', content: text }
       ]
     };
@@ -1292,7 +1569,7 @@
     var url = 'https://generativelanguage.googleapis.com/v1beta/models/' +
       encodeURIComponent(model) + ':generateContent?key=' + encodeURIComponent(key);
     var body = {
-      systemInstruction: { parts: [{ text: to === 'en' ? SYS_KO_EN : SYS_EN_KO }] },
+      systemInstruction: { parts: [{ text: sysPrompt(from, to) }] },
       contents: [{ role: 'user', parts: [{ text: text }] }],
       generationConfig: { temperature: 0.2, maxOutputTokens: 600 }
     };
@@ -1342,7 +1619,7 @@
       temperature: 0.2,
       max_tokens: 500,
       messages: [
-        { role: 'system', content: to === 'en' ? SYS_KO_EN : SYS_EN_KO },
+        { role: 'system', content: sysPrompt(from, to) },
         { role: 'user', content: text }
       ]
     };
@@ -2237,6 +2514,577 @@
     if (document.visibilityState === 'visible' && settings.keepAwake) requestWakeLock();
   });
 
+  /* ═════════════════════════════════════════════════════
+     🎬 실시간 자막 모드
+       · 언어 선택(EN/JA/ZH/KO) → Web Speech 연속 인식(continuous+interim)
+       · 자동 감지 → Groq Whisper(whisper-large-v3-turbo) 4.5초 녹음 청크
+       · 확정된 문장마다 현재 번역 엔진(기본/Groq/Gemini/OpenAI)으로 번역해 자막 누적
+     ═════════════════════════════════════════════════════ */
+  var SUB_LANGS = {
+    en: { key: 'en', name: '영어', code: 'en-US', tr: 'en' },
+    ja: { key: 'ja', name: '일본어', code: 'ja-JP', tr: 'ja' },
+    zh: { key: 'zh', name: '중국어', code: 'zh-CN', tr: 'zh-CN' },
+    ko: { key: 'ko', name: '한국어', code: 'ko-KR', tr: 'ko' },
+    auto: { key: 'auto', name: '자동 감지', code: '', tr: 'auto' }
+  };
+  var SUB_SIZES = { normal: '보통', large: '크게', xlarge: '특대' };
+  var SUB_SIZE_ORDER = ['normal', 'large', 'xlarge'];
+  var WHISPER_CHUNK_MS = 4500;
+  var WHISPER_LANGS = {
+    english: { tr: 'en', name: '영어' }, korean: { tr: 'ko', name: '한국어' },
+    japanese: { tr: 'ja', name: '일본어' }, chinese: { tr: 'zh-CN', name: '중국어' },
+    spanish: { tr: 'es', name: '스페인어' }, french: { tr: 'fr', name: '프랑스어' },
+    german: { tr: 'de', name: '독일어' }, russian: { tr: 'ru', name: '러시아어' }
+  };
+
+  var SUB = {
+    active: false,
+    mode: null,            // 'web' | 'whisper'
+    lines: [],
+    seq: 0,
+    pending: 0,
+    queue: Promise.resolve(),
+    interim: '',
+    recog: null,
+    restartTimer: null,
+    restarts: 0,
+    lastFinal: '',
+    lastFinalAt: 0,
+    mediaRecorder: null,
+    stream: null,
+    chunkTimer: null,
+    wake: null
+  };
+
+  function subCfg() { return SUB_LANGS[settings.subLang] || SUB_LANGS.en; }
+  function srCtor() { return window.SpeechRecognition || window.webkitSpeechRecognition || null; }
+
+  function paintSubLangs() {
+    var lang = SUB_LANGS[settings.subLang] ? settings.subLang : 'en';
+    Array.prototype.forEach.call($('subLangs').children, function (b) {
+      b.classList.toggle('on', b.getAttribute('data-lang') === lang);
+    });
+  }
+
+  function paintSubSize() {
+    var s = SUB_SIZES[settings.subSize] ? settings.subSize : 'normal';
+    var v = $('viewSub');
+    v.classList.remove('size-normal', 'size-large', 'size-xlarge');
+    v.classList.add('size-' + s);
+    $('subSizeLabel').textContent = SUB_SIZES[s];
+  }
+
+  function paintSubToggle() {
+    var b = $('subToggle');
+    if (SUB.active) { b.textContent = '⏹ 멈춤'; b.classList.add('stop'); }
+    else { b.textContent = '▶ 자막 시작'; b.classList.remove('stop'); }
+  }
+
+  function subPaintStatus() {
+    var dot = $('subDot'), txt = $('subStatusText'), cls = 'dot', msg = '';
+    if (!SUB.active) {
+      msg = SUB.lines.length ? '멈춤 — ▶ 자막 시작을 누르면 이어집니다' : '대기 — ▶ 자막 시작을 누르세요';
+    } else {
+      var base = SUB.mode === 'whisper' ? '녹음 중 · 자동 감지(Whisper)' : '듣는 중 · ' + subCfg().name;
+      if (SUB.pending > 0) { cls = 'dot busy'; msg = base + ' · 번역 중…'; }
+      else { cls = 'dot live'; msg = base; }
+    }
+    dot.className = cls;
+    txt.textContent = msg;
+  }
+
+  function subPaintInterim() {
+    var box = $('subInterim'), lbl = $('subInterimLbl'), tx = $('subInterimText');
+    var live = String(SUB.interim || '').trim();
+    if (!SUB.active) { box.classList.remove('show'); return; }
+    if (SUB.mode === 'whisper' && !live) {
+      lbl.textContent = '녹음';
+      lbl.className = 'sub-interim-lbl';
+      tx.innerHTML = '<em>4초씩 듣고 언어를 자동으로 판별합니다…</em>';
+      box.classList.add('show');
+      return;
+    }
+    if (!live) { box.classList.remove('show'); return; }
+    lbl.textContent = '인식 중';
+    lbl.className = 'sub-interim-lbl';
+    tx.textContent = live;
+    box.classList.add('show');
+  }
+
+  /* ── 자막 줄 렌더링 ── */
+  function subItemHTML(l) {
+    var body;
+    if (l.pending) body = '<div class="sub-dst" style="font-size:13px;font-weight:600;color:#8fb6de;text-shadow:none">번역 중…</div>';
+    else if (l.err) body = '<div class="sub-dst err">⚠ ' + esc(l.err) + '</div>';
+    else body = '<div class="sub-dst">' + esc(l.dst) + '</div>';
+    var tag = l.tag ? '<span class="sub-tag">' + esc(l.tag) + '</span>' : '';
+    return '<div class="sub-item' + (l.pending ? ' pending' : '') + '" data-line="' + l.id + '">' +
+      '<div class="sub-src">' + esc(l.src) + tag + '</div>' + body + '</div>';
+  }
+
+  function subRenderAll() {
+    $('subLines').innerHTML = SUB.lines.map(subItemHTML).join('');
+    $('subEmpty').style.display = SUB.lines.length ? 'none' : '';
+    subScrollToEnd(true);
+  }
+
+  function subPatchLine(l) {
+    var el = $('subLines').querySelector('[data-line="' + l.id + '"]');
+    if (!el) { subRenderAll(); return; }
+    el.classList.toggle('pending', !!l.pending);
+    var dst = el.querySelector('.sub-dst');
+    if (dst) {
+      if (l.pending) {
+        dst.className = 'sub-dst';
+        dst.style.fontSize = '13px'; dst.style.fontWeight = '600';
+        dst.style.color = '#8fb6de'; dst.style.textShadow = 'none';
+        dst.textContent = '번역 중…';
+      } else if (l.err) {
+        dst.className = 'sub-dst err';
+        dst.style.fontSize = ''; dst.style.fontWeight = ''; dst.style.color = ''; dst.style.textShadow = '';
+        dst.textContent = '⚠ ' + l.err;
+      } else {
+        dst.className = 'sub-dst';
+        dst.style.fontSize = ''; dst.style.fontWeight = ''; dst.style.color = ''; dst.style.textShadow = '';
+        dst.textContent = l.dst;
+      }
+    }
+    subScrollIfNearEnd();
+  }
+
+  /* ── 자동 스크롤 ── */
+  function subNearEnd() {
+    var s = $('subStage');
+    return (s.scrollHeight - s.scrollTop - s.clientHeight) < 90;
+  }
+  function subPaintJump() {
+    var s = $('subStage');
+    var far = (s.scrollHeight - s.scrollTop - s.clientHeight) > 150;
+    $('subJump').classList.toggle('show', far && SUB.lines.length > 0);
+  }
+  function subScrollToEnd(force) {
+    var s = $('subStage');
+    if (force || subNearEnd()) {
+      requestAnimationFrame(function () { s.scrollTop = s.scrollHeight; subPaintJump(); });
+    } else {
+      subPaintJump();
+    }
+  }
+  function subScrollIfNearEnd() { subScrollToEnd(false); }
+
+  $('subStage').addEventListener('scroll', subPaintJump);
+  $('subJump').addEventListener('click', function () { subScrollToEnd(true); });
+
+  /* ── 문장 확정 → 번역 대기열 → 자막 추가 ── */
+  function subSplitSentences(t) {
+    var s = String(t || '').trim();
+    if (!s) return [];
+    var raw = s.split(/(?<=[.!?。？！])\s*/);
+    var out = [];
+    raw.forEach(function (x) {
+      x = x.trim();
+      if (!x) return;
+      if (out.length && x.length <= 2) { out[out.length - 1] += x; return; }
+      out.push(x);
+    });
+    return out.length ? out : [s];
+  }
+
+  function subPushSentence(text, from, tag) {
+    var src = cleanOut(text);
+    if (!src) return;
+    // 같은 문장이 짧은 간격으로 다시 인식되면 한 번만
+    if (src === SUB.lastFinal && (Date.now() - SUB.lastFinalAt) < 1400) return;
+    // Whisper 청크가 앞 문장을 물고 오는 경우 겹친 앞부분을 덜어낸다
+    var prev = SUB.lines.length ? SUB.lines[SUB.lines.length - 1] : null;
+    if (prev && prev.src && src.length > prev.src.length && src.indexOf(prev.src) === 0) {
+      src = cleanOut(src.slice(prev.src.length));
+      if (!src) return;
+    } else if (prev && prev.src === src) return;
+    SUB.lastFinal = src;
+    SUB.lastFinalAt = Date.now();
+
+    var to = from === 'ko' ? 'en' : 'ko';
+    var line = { id: ++SUB.seq, src: src, dst: '', err: '', pending: true, from: from, to: to, tag: tag || '' };
+    SUB.lines.push(line);
+    $('subLines').insertAdjacentHTML('beforeend', subItemHTML(line));
+    $('subEmpty').style.display = 'none';
+    subScrollToEnd(false);
+
+    SUB.pending++;
+    subPaintStatus();
+    SUB.queue = SUB.queue.then(function () {
+      return translate(src, from, to).then(function (t) {
+        line.dst = t; line.err = ''; line.pending = false;
+      }, function (e) {
+        line.err = friendlyError(e); line.pending = false;
+      });
+    }).then(function () {
+      SUB.pending = Math.max(0, SUB.pending - 1);
+      subPatchLine(line);
+      subPaintStatus();
+    });
+  }
+
+  /* ── Web Speech 연속 인식 ── */
+  function subStartWeb() {
+    if (!SUB.active) return;
+    if (settings.subLang === 'auto') { subStartWhisper(); return; }
+    var ctor = srCtor();
+    if (!ctor) {
+      subStop(true);
+      toast('이 브라우저는 음성 인식을 지원하지 않습니다. 크롬에서 HTTPS 주소로 열거나 자동 감지(Groq)를 쓰세요.', 5400);
+      return;
+    }
+    var cfg = subCfg();
+    var r = new ctor();
+    SUB.recog = r;
+    SUB.mode = 'web';
+    r.lang = cfg.code;
+    r.continuous = true;
+    r.interimResults = true;
+    r.maxAlternatives = 1;
+
+    r.onstart = function () {
+      SUB.restarts = 0;
+      subPaintStatus();
+    };
+    r.onresult = function (ev) {
+      var interim = '';
+      for (var i = ev.resultIndex; i < ev.results.length; i++) {
+        var res = ev.results[i];
+        var txt = res[0] ? res[0].transcript : '';
+        if (res.isFinal) {
+          SUB.restarts = 0;
+          subSplitSentences(txt).forEach(function (p) { subPushSentence(p, cfg.tr, ''); });
+        } else {
+          interim += txt;
+        }
+      }
+      SUB.interim = cleanOut(interim);
+      subPaintInterim();
+    };
+    r.onerror = function (ev) {
+      var code = ev && ev.error;
+      if (code === 'aborted' || code === 'no-speech') return;   // onend에서 자동 재시작
+      if (code === 'not-allowed' || code === 'service-not-allowed') {
+        SUB.interim = ''; subPaintInterim();
+        subStop(true);
+        toast('마이크 권한이 차단되었습니다. 주소창 자물쇠 → 마이크 허용 후 다시 시작하세요.', 6200);
+        return;
+      }
+      if (code === 'network') {
+        toast('음성 인식 서버에 연결하지 못했습니다. 잠시 후 자동으로 다시 시도합니다.', 4200);
+        return;
+      }
+      if (code === 'audio-capture') {
+        subStop(true);
+        toast('마이크를 찾을 수 없습니다. 다른 앱이 마이크를 쓰고 있는지 확인하세요.', 4600);
+        return;
+      }
+      toast('음성 인식 오류: ' + (code || 'unknown'), 3200);
+    };
+    r.onend = function () {
+      if (SUB.recog !== r) return;
+      SUB.recog = null;
+      SUB.interim = '';
+      subPaintInterim();
+      if (!SUB.active) { subPaintStatus(); return; }
+      // 안드로이드 크롬은 침묵이 이어지면 스스로 끝난다 → 사용자가 멈출 때까지 자동 재시작
+      SUB.restarts++;
+      var delay = SUB.restarts > 8 ? 1500 : (SUB.restarts > 3 ? 700 : 250);
+      clearTimeout(SUB.restartTimer);
+      SUB.restartTimer = setTimeout(function () {
+        if (!SUB.active || SUB.recog) return;
+        subStartWeb();
+      }, delay);
+      subPaintStatus();
+    };
+
+    try {
+      r.start();
+    } catch (e) {
+      SUB.recog = null;
+      clearTimeout(SUB.restartTimer);
+      SUB.restartTimer = setTimeout(function () { if (SUB.active) subStartWeb(); }, 800);
+    }
+  }
+
+  /* ── 자동 감지: Groq Whisper ── */
+  function subPickMime() {
+    if (!window.MediaRecorder || !MediaRecorder.isTypeSupported) return '';
+    var cands = ['audio/webm;codecs=opus', 'audio/webm', 'audio/mp4', 'audio/ogg;codecs=opus'];
+    for (var i = 0; i < cands.length; i++) {
+      try { if (MediaRecorder.isTypeSupported(cands[i])) return cands[i]; } catch (e) { }
+    }
+    return '';
+  }
+
+  function subStartWhisper() {
+    if (!SUB.active) return;
+    var key = (settings.groqKey || '').trim();
+    if (!key) {
+      subStop(true);
+      toast('자동 감지에는 Groq API 키가 필요합니다. 설정 → Groq에 gsk_ 키를 넣거나, 위에서 영어·일본어·중국어·한국어를 직접 고르세요.', 6800);
+      return;
+    }
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia || !window.MediaRecorder) {
+      subStop(true);
+      toast('이 브라우저에서는 자동 감지 녹음을 지원하지 않습니다. 언어를 직접 선택해 주세요.', 5400);
+      return;
+    }
+    navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, channelCount: 1 } })
+      .then(function (stream) {
+        if (!SUB.active || settings.subLang !== 'auto') {
+          try { stream.getTracks().forEach(function (t) { t.stop(); }); } catch (e) { }
+          return;
+        }
+        SUB.stream = stream;
+        SUB.mode = 'whisper';
+        subPaintStatus();
+        subPaintInterim();
+        subRecordChunk();
+      })
+      .catch(function () {
+        subStop(true);
+        toast('마이크를 열 수 없습니다. 권한을 허용했는지 확인하고 HTTPS 주소로 여세요.', 5200);
+      });
+  }
+
+  function subRecordChunk() {
+    if (!SUB.active || SUB.mode !== 'whisper' || !SUB.stream) return;
+    var mime = subPickMime();
+    var rec;
+    try { rec = mime ? new MediaRecorder(SUB.stream, { mimeType: mime }) : new MediaRecorder(SUB.stream); }
+    catch (e) {
+      try { rec = new MediaRecorder(SUB.stream); }
+      catch (e2) {
+        subStop(true);
+        toast('녹음을 시작하지 못했습니다. 언어를 직접 선택해 Web Speech로 사용하세요.', 5400);
+        return;
+      }
+    }
+    SUB.mediaRecorder = rec;
+    var chunks = [];
+    rec.ondataavailable = function (ev) { if (ev.data && ev.data.size) chunks.push(ev.data); };
+    rec.onstop = function () {
+      if (SUB.mediaRecorder === rec) SUB.mediaRecorder = null;
+      clearTimeout(SUB.chunkTimer);
+      var type = rec.mimeType || 'audio/webm';
+      var blob = new Blob(chunks, { type: type });
+      chunks = [];
+      if (blob.size > 1200) subWhisperTranscribe(blob, type);
+      if (SUB.active && SUB.mode === 'whisper' && SUB.stream) setTimeout(subRecordChunk, 120);
+    };
+    try { rec.start(); }
+    catch (e) { subStop(true); return; }
+    subPaintInterim();
+    SUB.chunkTimer = setTimeout(function () {
+      try { if (rec.state === 'recording') rec.stop(); } catch (e) { }
+    }, WHISPER_CHUNK_MS);
+  }
+
+  function subWhisperTranscribe(blob, type) {
+    var key = (settings.groqKey || '').trim();
+    if (!key) return;
+    var ext = /mp4|m4a|aac/i.test(type) ? 'mp4' : (/ogg/i.test(type) ? 'ogg' : 'webm');
+    var fd = new FormData();
+    fd.append('file', blob, 'chunk.' + ext);
+    fd.append('model', 'whisper-large-v3-turbo');
+    fd.append('response_format', 'verbose_json');
+    fd.append('temperature', '0');
+    SUB.pending++;
+    subPaintStatus();
+    fetchWithTimeout('https://api.groq.com/openai/v1/audio/transcriptions', {
+      method: 'POST',
+      headers: { 'Authorization': 'Bearer ' + key },
+      body: fd
+    }, 25000).then(function (res) {
+      return res.json().catch(function () { return {}; }).then(function (data) {
+        if (!res.ok) {
+          var msg = (data && data.error && data.error.message) || ('HTTP ' + res.status);
+          var e = new Error(msg); e.status = res.status; e.engine = 'groq';
+          throw e;
+        }
+        return data || {};
+      });
+    }).then(function (data) {
+      SUB.pending = Math.max(0, SUB.pending - 1);
+      var text = cleanOut(data.text || '');
+      var detected = String(data.language || '').toLowerCase();
+      var info = WHISPER_LANGS[detected] || null;
+      // 소리 없는 구간의 잡음·환각 응답은 버린다
+      if (!text || !/[0-9A-Za-z\uAC00-\uD7A3\u3040-\u30FF\u4E00-\u9FFF]/.test(text)) { subPaintStatus(); return; }
+      subPushSentence(text, info ? info.tr : 'en', info ? info.name : detected);
+      subPaintStatus();
+    }).catch(function (e) {
+      SUB.pending = Math.max(0, SUB.pending - 1);
+      subPaintStatus();
+      if (e && e.status === 401) { subStop(true); toast('Groq API 키가 올바르지 않습니다. 설정에서 gsk_ 키를 확인하세요.', 5200); return; }
+      if (e && e.status === 429) { toast('Groq 무료 한도(분당)에 걸렸습니다. 잠시 후 자동으로 다시 시도합니다.', 3800); return; }
+      if (e && e.status === 404) { subStop(true); toast('Groq Whisper 모델을 사용할 수 없습니다(404).', 5200); return; }
+      toast('자동 감지 인식 실패 · ' + friendlyError(e), 3400);
+    });
+  }
+
+  /* ── 시작 / 멈춤 ── */
+  function subStart() {
+    if (SUB.active) return;
+    var key = SUB_LANGS[settings.subLang] ? settings.subLang : 'en';
+    settings.subLang = key;
+    if (key === 'auto') {
+      if (!(settings.groqKey || '').trim()) {
+        toast('자동 감지에는 Groq API 키가 필요합니다. 설정 → Groq에 gsk_ 키를 넣거나, 위에서 영어·일본어·중국어·한국어를 직접 고르세요.', 6800);
+        return;
+      }
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia || !window.MediaRecorder) {
+        toast('이 브라우저에서는 자동 감지 녹음을 지원하지 않습니다. 언어를 직접 선택해 주세요.', 5400);
+        return;
+      }
+    } else if (!srCtor()) {
+      toast('이 브라우저는 음성 인식을 지원하지 않습니다. 크롬에서 HTTPS 주소로 열어 주세요.', 5200);
+      return;
+    }
+    SUB.active = true;
+    SUB.mode = key === 'auto' ? 'whisper' : 'web';
+    SUB.restarts = 0;
+    SUB.lastFinal = '';
+    paintSubToggle();
+    requestSubWake();
+    SUB.interim = '';
+    subPaintInterim();
+    subPaintStatus();
+    if (SUB.mode === 'whisper') subStartWhisper(); else subStartWeb();
+  }
+
+  function subStop(silent) {
+    var wasActive = SUB.active;
+    SUB.active = false;
+    SUB.mode = null;
+    clearTimeout(SUB.restartTimer); SUB.restartTimer = null;
+    clearTimeout(SUB.chunkTimer); SUB.chunkTimer = null;
+    var r = SUB.recog; SUB.recog = null;
+    if (r) { try { r.abort(); } catch (e) { } }
+    var rec = SUB.mediaRecorder; SUB.mediaRecorder = null;
+    if (rec) { try { if (rec.state !== 'inactive') rec.stop(); } catch (e) { } }
+    if (SUB.stream) {
+      try { SUB.stream.getTracks().forEach(function (t) { t.stop(); }); } catch (e) { }
+      SUB.stream = null;
+    }
+    SUB.interim = '';
+    subPaintInterim();
+    subPaintStatus();
+    paintSubToggle();
+    releaseSubWake();
+    if (wasActive && !silent) toast('자막을 멈췄습니다. ▶ 시작을 누르면 이어서 쌓입니다.', 2200);
+  }
+
+  function subClear() {
+    SUB.lines = [];
+    SUB.lastFinal = '';
+    $('subLines').innerHTML = '';
+    $('subEmpty').style.display = '';
+    subPaintJump();
+    toast('자막을 지웠습니다.', 1800);
+  }
+
+  function copyText(txt, okMsg) {
+    function fallback() {
+      try {
+        var ta = document.createElement('textarea');
+        ta.value = txt;
+        ta.setAttribute('readonly', '');
+        ta.style.position = 'fixed'; ta.style.top = '-1000px'; ta.style.opacity = '0';
+        document.body.appendChild(ta);
+        ta.select();
+        var ok = document.execCommand('copy');
+        document.body.removeChild(ta);
+        toast(ok ? okMsg : '복사하지 못했습니다. 화면을 길게 눌러 선택해 복사하세요.', 3200);
+      } catch (e) { toast('복사하지 못했습니다.', 2600); }
+    }
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(txt).then(function () { toast(okMsg, 2200); }, fallback);
+    } else fallback();
+  }
+
+  function subCopyAll() {
+    if (!SUB.lines.length) { toast('복사할 자막이 없습니다.', 1800); return; }
+    var txt = SUB.lines.map(function (l) {
+      return l.src + (l.dst ? '\n' + l.dst : (l.err ? '\n(번역 실패)' : ''));
+    }).join('\n\n');
+    copyText(txt, '자막 전체를 복사했습니다 · ' + SUB.lines.length + '문장');
+  }
+
+  /* ── 화면 꺼짐 방지 (자막 모드) ── */
+  function requestSubWake() {
+    if (!('wakeLock' in navigator)) return;
+    try {
+      navigator.wakeLock.request('screen').then(function (l) { SUB.wake = l; }).catch(function () { });
+    } catch (e) { }
+  }
+  function releaseSubWake() {
+    var l = SUB.wake; SUB.wake = null;
+    if (l) { try { l.release(); } catch (e) { } }
+  }
+  document.addEventListener('visibilitychange', function () {
+    if (document.visibilityState === 'visible' && SUB.active) requestSubWake();
+  });
+
+  /* ── 모드 전환 ── */
+  function setView(v) {
+    if (v !== 'chat' && v !== 'sub') v = 'chat';
+    state.view = v;
+    $('viewChat').classList.toggle('on', v === 'chat');
+    $('viewSub').classList.toggle('on', v === 'sub');
+    $('tabChat').classList.toggle('on', v === 'chat');
+    $('tabChat').setAttribute('aria-selected', v === 'chat' ? 'true' : 'false');
+    $('tabSub').classList.toggle('on', v === 'sub');
+    $('tabSub').setAttribute('aria-selected', v === 'sub' ? 'true' : 'false');
+    if (v === 'sub') {
+      if (state.listening) stopListening();
+      stopSpeaking();
+      setStatus('idle');
+      setTimeout(function () { subPaintJump(); subScrollToEnd(true); }, 60);
+    } else if (SUB.active) {
+      subStop(true);
+    }
+  }
+
+  Array.prototype.forEach.call(document.querySelectorAll('.mode-tab'), function (b) {
+    b.addEventListener('click', function () { setView(b.getAttribute('data-view')); });
+  });
+
+  $('subToggle').addEventListener('click', function () {
+    if (SUB.active) subStop(); else subStart();
+  });
+  $('subClear').addEventListener('click', subClear);
+  $('subCopy').addEventListener('click', subCopyAll);
+  $('subSizeBtn').addEventListener('click', function () {
+    var i = SUB_SIZE_ORDER.indexOf(settings.subSize);
+    settings.subSize = SUB_SIZE_ORDER[(i + 1) % SUB_SIZE_ORDER.length];
+    saveSettings();
+    paintSubSize();
+    subScrollToEnd(true);
+    toast('자막 글자 크기 · ' + SUB_SIZES[settings.subSize], 1600);
+  });
+  $('subLangs').addEventListener('click', function (ev) {
+    var b = ev.target.closest ? ev.target.closest('[data-lang]') : null;
+    if (!b) return;
+    var key = b.getAttribute('data-lang');
+    if (!SUB_LANGS[key] || key === settings.subLang) return;
+    settings.subLang = key;
+    saveSettings();
+    paintSubLangs();
+    if (SUB.active) {
+      subStop(true);
+      setTimeout(function () { subStart(); }, 260);
+    }
+    if (key === 'auto' && !(settings.groqKey || '').trim()) {
+      toast('자동 감지는 Groq API 키가 필요합니다. 설정 → Groq에 키를 넣으면 시작됩니다.', 4800);
+    }
+  });
+
+
   /* ───────── 설정 모달 ───────── */
   function openModal(id) { $(id).classList.add('open'); }
   function closeModal(id) { $(id).classList.remove('open'); }
@@ -2361,6 +3209,11 @@
   updateEngineLabel();
   renderAll();
   setStatus('idle');
+  paintSubLangs();
+  paintSubSize();
+  paintSubToggle();
+  subPaintStatus();
+  setView('chat');
 
   if (settings.quickOpen) {
     $('quick').classList.add('open');
@@ -2411,7 +3264,28 @@
       renderQpList();
       openModal('quickEditModal');
     },
-    refreshQuick: function () { renderQuick(); renderQpList(); }
+    refreshQuick: function () { renderQuick(); renderQpList(); },
+    // 실시간 자막 모드 확인용(테스트·미리보기)
+    subtitle: {
+      open: function () { setView('sub'); },
+      close: function () { setView('chat'); },
+      setLang: function (k) { if (SUB_LANGS[k]) { settings.subLang = k; saveSettings(); paintSubLangs(); } },
+      setSize: function (s) { if (SUB_SIZES[s]) { settings.subSize = s; saveSettings(); paintSubSize(); } },
+      push: function (src, from, tag) { subPushSentence(src, from || 'en', tag || ''); },
+      lines: function () {
+        return SUB.lines.map(function (l) {
+          return { src: l.src, dst: l.dst, err: l.err, pending: l.pending, from: l.from, to: l.to, tag: l.tag };
+        });
+      },
+      state: function () {
+        return { active: SUB.active, mode: SUB.mode, pending: SUB.pending, restarts: SUB.restarts, lang: settings.subLang, view: state.view };
+      },
+      interim: function () { return SUB.interim; },
+      start: subStart,
+      stop: function () { subStop(true); },
+      clear: subClear,
+      copy: subCopyAll
+    }
   };
 })();
 </script>
