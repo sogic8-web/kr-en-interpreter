@@ -1350,6 +1350,13 @@
       .replace(/\s+/g, ' ')
       .trim();
   }
+  // MyMemory가 번역문에 섞어 보내는 내부 태그(<g id="1">…</g>, <br>) 제거
+  function stripMT(s) {
+    return String(s || '')
+      .replace(/<\/?g\b[^>]*>/gi, '')
+      .replace(/<\/?br\s*\/?>/gi, ' ')
+      .replace(/\s+([.,!?。？！])/g, '$1');
+  }
 
   /* ───────── 번역: 기본(MyMemory) ───────── */
   function splitForMyMemory(text, max) {
@@ -1405,7 +1412,7 @@
         }).then(function (t) { out.push(t); });
       });
     }, Promise.resolve()).then(function () {
-      var joined = out.join(' ');
+      var joined = stripMT(out.join(' '));
       if (to === 'en') joined = fixEnCase(cleanOut(joined));
       else joined = postKo(cleanOut(joined));
       // 번역기가 원문을 그대로 돌려준 경우(사실상 미번역) 구분
