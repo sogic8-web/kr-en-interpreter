@@ -655,6 +655,19 @@
   .sub-size-btn b{color:#fff;font-weight:800;}
   .sub-size-btn:active{background:#1a2c42;}
 
+  /* 자막 음성 듣기(이어폰 TTS) 토글 */
+  .sub-tts-btn{
+    flex:0 0 auto;height:32px;padding:0 8px;border-radius:9px;
+    display:flex;align-items:center;justify-content:center;gap:3px;
+    background:#132234;border:1px solid #22384f;
+    font-size:10.5px;font-weight:800;color:#b8cde1;letter-spacing:-.2px;
+    white-space:nowrap;transition:background .15s,border-color .15s,color .15s;
+  }
+  .sub-tts-btn b{font-weight:900;color:#9db6cd;}
+  .sub-tts-btn.on{background:#0b2318;border-color:#1f9d55;color:#7ee2a2;}
+  .sub-tts-btn.on b{color:#4ade80;}
+  .sub-tts-btn:active{transform:scale(.97);}
+
   /* 마이크 음량 미터 · 상태 배지 (Whisper 수음 확인용) */
   .sub-mic{
     flex:0 0 auto;display:flex;align-items:center;gap:5px;
@@ -769,6 +782,9 @@
   }
   .sub-item.pending .sub-dst{color:#8fb6de;font-weight:600;}
   .sub-item.pending .sub-dst .dots span{background:#8fb6de;}
+  /* 탭하여 다시 듣기 피드백 */
+  .sub-item.replay{background:rgba(59,130,246,.13);border-left-color:#7fb2ea;}
+  .sub-item:active{background:rgba(255,255,255,.04);}
   .sub-dst.err{
     font-size:13px;font-weight:600;line-height:1.45;color:#f9a8a8;
     text-shadow:none;
@@ -911,6 +927,7 @@
         <span class="sub-mic-bar"><i id="subMicFill"></i></span>
         <span class="sub-mic-badge" id="subMicBadge">대기</span>
       </div>
+      <button class="sub-tts-btn" id="subTTSBtn" aria-pressed="false" aria-label="자막 음성 듣기">🎧 듣기 <b>OFF</b></button>
       <button class="sub-size-btn" id="subSizeBtn" aria-label="자막 글자 크기">가 <b id="subSizeLabel">보통</b></button>
     </div>
 
@@ -1237,7 +1254,8 @@
     quickOpen: false,
     // 실시간 자막 모드
     subLang: 'en',        // en | ja | zh | ko | auto
-    subSize: 'normal'     // normal | large | xlarge
+    subSize: 'normal',    // normal | large | xlarge
+    subTTS: false         // 자막 번역문 자동 재생(이어폰 TTS) — 사용자가 직접 켜야 한다
   };
   var settings = Object.assign({}, DEFAULTS);
 
@@ -2643,11 +2661,132 @@
     recogAt: 0,            // 현재 인식 세션 시작 시각
     watchdog: null,
     skipped: 0,            // 무음이라 건너뛴 청크 수
-    silent: false          // 현재 수음이 무음인지
+    silent: false,         // 현재 수음이 무음인지
+    // ── 자막 음성 듣기(이어폰 TTS) ──
+    ttsQ: [],              // 재생 대기열 [{text, lang, force}]
+    ttsBusy: false,        // 지금 말하는 중
+    ttsToken: 0,           // 중단 토큰 — cancel 되면 올라가고, 남은 콜백은 무시된다
+    ttsDropped: 0,         // 지연 방지로 건너뛴(버린) 문장 수
+    ttsLog: []             // 실제로 말한 조각(테스트·확인용, 최근 20개)
   };
 
   function subCfg() { return SUB_LANGS[settings.subLang] || SUB_LANGS.en; }
   function srCtor() { return window.SpeechRecognition || window.webkitSpeechRecognition || null; }
+
+  /* ── 자막 음성 듣기 (이어폰 TTS) ──────────────────────────
+     🎧 듣기 ON 이면 번역이 끝난 문장을 자동으로 읽어 준다.
+     지연 방지: 대기열은 최대 2문장 — 강연이 빨라 밀리면 오래된 문장부터 버리고
+     항상 최신 문장 위주로 재생한다. 재생 속도는 설정의 ttsRate를 따른다.
+     (1:1 대화의 speak()와 별도 경로: 대화 흐름·자동 전환에 영향을 주지 않는다)
+  ────────────────────────────────────────────────────── */
+  var SUB_TTS_MAX = 2;
+
+  function subTtsSupported() { return !!window.speechSynthesis; }
+
+  function subTtsStop() {
+    SUB.ttsQ = [];
+    SUB.ttsBusy = false;
+    SUB.ttsToken++;
+    if (window.speechSynthesis) { try { speechSynthesis.cancel(); } catch (e) { } }
+  }
+
+  function subTtsEnqueue(text, lang, force) {
+    // 자동 재생은 🎧 듣기 ON + 자막 수신 중일 때만 (멈춤 뒤 번역 완료분이 뒤늦게 들리지 않게)
+    if (!force && (!settings.subTTS || !SUB.active)) return;
+    if (!subTtsSupported()) return;
+    var t = String(text || '').trim();
+    if (!t) return;
+    // 지금 말하는 문장은 그대로 두고, 기다리는 문장만 최신 2개로 줄인다
+    while (SUB.ttsQ.length >= SUB_TTS_MAX) {
+      SUB.ttsQ.shift();
+      SUB.ttsDropped++;
+    }
+    SUB.ttsQ.push({ text: t, lang: lang === 'en' ? 'en' : 'ko', force: !!force });
+    subTtsPump();
+  }
+
+  function subTtsPump() {
+    if (SUB.ttsBusy) return;
+    while (SUB.ttsQ.length) {
+      var item = SUB.ttsQ[0];
+      if (!item.force && !settings.subTTS) { subTtsStop(); return; }
+      SUB.ttsQ.shift();
+      if (subTtsSay(item)) return;
+    }
+  }
+
+  // 한 문장을 말한다. 진행 중이면 다음 차례를 이어받고, 중단되면 조용히 끝난다.
+  function subTtsSay(item) {
+    var chunks = chunkSpeech(item.text);
+    if (!chunks.length) return false;
+    var token = SUB.ttsToken;
+    var rate = Math.min(2, Math.max(0.5, Number(settings.ttsRate) || 1));
+    SUB.ttsBusy = true;
+    var i = 0;
+    function finish() {
+      if (token !== SUB.ttsToken) return;    // 중단됨 — 다음 차례를 잡지 않는다
+      SUB.ttsBusy = false;
+      subTtsPump();
+    }
+    function next() {
+      if (token !== SUB.ttsToken) return;
+      if (i >= chunks.length) { finish(); return; }
+      var piece = chunks[i++];
+      var u;
+      try { u = new SpeechSynthesisUtterance(piece); } catch (e) { finish(); return; }
+      u.lang = item.lang === 'en' ? 'en-US' : 'ko-KR';
+      var v = pickVoice(item.lang);
+      if (v) u.voice = v;
+      u.rate = rate;
+      u.pitch = 1;
+      u.volume = 1;
+      var fired = false, guard = null;
+      function step() {
+        if (fired) return;
+        fired = true;
+        if (guard) clearTimeout(guard);
+        next();
+      }
+      // onend가 오지 않는 기기(안드로이드 백그라운드 등) 대비 — 다음 조각으로 넘긴다
+      guard = setTimeout(step, Math.max(3200, (piece.length * 140) / rate));
+      u.onend = step;
+      u.onerror = step;
+      SUB.ttsLog.push({ text: piece, lang: u.lang, at: Date.now() });
+      if (SUB.ttsLog.length > 20) SUB.ttsLog.shift();
+      try { speechSynthesis.speak(u); } catch (e) { step(); }
+    }
+    next();
+    return true;
+  }
+
+  // 자막 한 줄을 탭했을 때 그 문장의 번역음을 1회 다시 읽는다(듣기 OFF 상태에서도 동작)
+  function subTtsReplay(lineId) {
+    var line = null;
+    for (var i = 0; i < SUB.lines.length; i++) {
+      if (SUB.lines[i].id === lineId) { line = SUB.lines[i]; break; }
+    }
+    if (!line || line.pending || !line.dst || line.err) return false;
+    if (!subTtsSupported()) return false;
+    subTtsStop();
+    SUB.ttsQ.push({ text: line.dst, lang: line.to === 'en' ? 'en' : 'ko', force: true });
+    subTtsPump();
+    var el = $('subLines').querySelector('[data-line="' + line.id + '"]');
+    if (el) {
+      el.classList.add('replay');
+      setTimeout(function () { el.classList.remove('replay'); }, 1200);
+    }
+    return true;
+  }
+
+  function paintSubTTS() {
+    var b = $('subTTSBtn');
+    if (!b) return;
+    var on = !!settings.subTTS;
+    b.classList.toggle('on', on);
+    b.setAttribute('aria-pressed', on ? 'true' : 'false');
+    b.innerHTML = '🎧 듣기 <b>' + (on ? 'ON' : 'OFF') + '</b>';
+    b.setAttribute('aria-label', on ? '자막 음성 듣기 켜짐' : '자막 음성 듣기 꺼짐');
+  }
 
   function paintSubLangs() {
     var lang = SUB_LANGS[settings.subLang] ? settings.subLang : 'en';
@@ -2833,7 +2972,7 @@
     else if (l.err) body = '<div class="sub-dst err">⚠ ' + esc(l.err) + '</div>';
     else body = '<div class="sub-dst">' + esc(l.dst) + '</div>';
     var tag = l.tag ? '<span class="sub-tag">' + esc(l.tag) + '</span>' : '';
-    return '<div class="sub-item' + (l.pending ? ' pending' : '') + '" data-line="' + l.id + '">' +
+    return '<div class="sub-item' + (l.pending ? ' pending' : '') + '" data-line="' + l.id + '" title="탭하면 다시 듣기">' +
       '<div class="sub-src">' + esc(l.src) + tag + '</div>' + body + '</div>';
   }
 
@@ -2938,6 +3077,8 @@
       SUB.pending = Math.max(0, SUB.pending - 1);
       subPatchLine(line);
       subPaintStatus();
+      // 🎧 듣기 ON — 번역이 끝난 문장을 즉시 재생 대기열에 넣는다(실패 문장은 제외)
+      if (!line.err && line.dst) subTtsEnqueue(line.dst, line.to);
     });
   }
 
@@ -3367,6 +3508,7 @@
     var wasActive = SUB.active;
     SUB.active = false;
     SUB.mode = null;
+    subTtsStop();          // 🎧 듣기 — 음성과 대기열을 즉시 끊는다
     clearTimeout(SUB.restartTimer); SUB.restartTimer = null;
     clearTimeout(SUB.chunkTimer); SUB.chunkTimer = null;
     clearTimeout(SUB.watchdog); SUB.watchdog = null;
@@ -3393,6 +3535,7 @@
   }
 
   function subClear() {
+    subTtsStop();
     SUB.lines = [];
     SUB.lastFinal = '';
     $('subLines').innerHTML = '';
@@ -3459,8 +3602,9 @@
       setStatus('idle');
       paintSubHint();
       setTimeout(function () { subPaintJump(); subScrollToEnd(true); }, 60);
-    } else if (SUB.active) {
-      subStop(true);
+    } else {
+      subTtsStop();        // 💬 1:1 대화로 전환 — 자막 음성과 대기열 즉시 중단
+      if (SUB.active) subStop(true);
     }
   }
 
@@ -3473,6 +3617,34 @@
   });
   $('subClear').addEventListener('click', subClear);
   $('subCopy').addEventListener('click', subCopyAll);
+
+  /* 🎧 듣기 토글 */
+  $('subTTSBtn').addEventListener('click', function () {
+    if (!subTtsSupported()) {
+      toast('이 브라우저는 음성 합성(speechSynthesis)을 지원하지 않습니다. 크롬에서 열어 주세요.', 4600);
+      return;
+    }
+    settings.subTTS = !settings.subTTS;
+    saveSettings();
+    paintSubTTS();
+    if (!settings.subTTS) {
+      subTtsStop();
+      toast('🎧 음성 듣기를 꿨습니다.', 1800);
+      return;
+    }
+    toast('이어폰 차용 시 강연 소리와 겹치지 않고 실시간 통역을 들을 수 있습니다', 4600);
+    subTtsEnqueue('음성 듣기를 켰습니다. 번역이 끝나는 대로 읽어 드립니다.', 'ko', true);
+  });
+
+  /* 자막 한 줄 탭 → 그 문장만 다시 듣기 */
+  $('subLines').addEventListener('click', function (ev) {
+    var el = ev.target.closest ? ev.target.closest('.sub-item') : null;
+    if (!el) return;
+    var id = Number(el.getAttribute('data-line'));
+    if (!id) return;
+    if (!subTtsSupported()) { toast('이 브라우저는 음성 합성을 지원하지 않습니다.', 3600); return; }
+    if (!subTtsReplay(id)) toast('번역이 끝난 문장만 다시 들을 수 있습니다.', 2000);
+  });
   $('subSizeBtn').addEventListener('click', function () {
     var i = SUB_SIZE_ORDER.indexOf(settings.subSize);
     settings.subSize = SUB_SIZE_ORDER[(i + 1) % SUB_SIZE_ORDER.length];
@@ -3621,6 +3793,8 @@
     syncSettingsUI();
     updateEngineLabel();
     paintToggles();
+    paintSubTTS();
+    subTtsStop();
     $('testResult').textContent = '';
     $('testResult').className = 'status-inline';
     setStatus('idle');
@@ -3642,6 +3816,7 @@
   setStatus('idle');
   paintSubLangs();
   paintSubSize();
+  paintSubTTS();
   paintSubToggle();
   paintSubHint();
   subPaintStatus();
@@ -3703,6 +3878,36 @@
       close: function () { setView('chat'); },
       setLang: function (k) { if (SUB_LANGS[k]) { settings.subLang = k; saveSettings(); paintSubLangs(); paintSubHint(); } },
       setSize: function (s) { if (SUB_SIZES[s]) { settings.subSize = s; saveSettings(); paintSubSize(); } },
+      setTTS: function (on) {
+        settings.subTTS = !!on; saveSettings(); paintSubTTS();
+        if (!settings.subTTS) subTtsStop();
+        return settings.subTTS;
+      },
+      tts: function () {
+        return {
+          on: !!settings.subTTS,
+          supported: subTtsSupported(),
+          label: $('subTTSBtn') ? $('subTTSBtn').textContent : '',
+          pressed: $('subTTSBtn') ? $('subTTSBtn').getAttribute('aria-pressed') : '',
+          rate: Number(settings.ttsRate) || 1,
+          queue: SUB.ttsQ.map(function (q) { return q.text; }),
+          busy: !!SUB.ttsBusy,
+          speaking: isSpeaking(),
+          dropped: SUB.ttsDropped,
+          spoken: SUB.ttsLog.slice(-12)
+        };
+      },
+      replay: function (id) { return subTtsReplay(Number(id)); },
+      // 음성 듣기 검증용(자막 수신 없이 자동 재생 경로를 확인)
+      activate: function () { SUB.active = true; SUB.mode = null; paintSubToggle(); subPaintStatus(); },
+      deactivate: function () { subStop(true); },
+      say: function (text, lang) { subTtsEnqueue(text, lang || 'ko', true); },
+      tapLine: function (id) {
+        var el = $('subLines').querySelector('[data-line="' + Number(id) + '"]');
+        if (!el) return false;
+        el.click();
+        return true;
+      },
       push: function (src, from, tag) { subPushSentence(src, from || 'en', tag || ''); },
       lines: function () {
         return SUB.lines.map(function (l) {
