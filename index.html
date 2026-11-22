@@ -1166,8 +1166,9 @@
             <li>상단 <b>🎬 실시간 자막</b> 탭을 누르면 자막 화면으로 바뀝니다(다시 누르면 1:1 대화로).</li>
             <li>듣기 언어를 고르고(기본 <b>영어</b>) <b>▶ 자막 시작</b>을 누르면 들리는 말이 한 문장씩 번역되어 아래로 쌓입니다.</li>
             <li>듣기 언어는 <b>영어·일본어·중국어·한국어·스페인어·프랑스어·독일어·베트남어·태국어</b> 9개와 <b>🤖 자동</b>이 있습니다. 한국어를 고르면 영어로 번역합니다.</li>
-            <li>아직 들리는 중인 말은 화면 아래 <b>인식 중</b> 줄에 미리 보이고, 문장이 확정되면 설정한 번역 엔진(기본·Groq·Gemini·OpenAI)으로 바로 번역됩니다.</li>
-            <li><b>자동</b>은 Groq Whisper로 4초씩 녹음해 언어를 판별합니다(Groq 키 필요). 키가 없으면 위에서 언어를 직접 고르세요.</li>
+            <li>설정에 <b>Groq 키</b>가 있으면 모든 언어(자동 포함)가 <b>Whisper</b>로 녹음해 받아쓰므로 TV·PC 스피커 소리도 잘 잡힙니다. 키가 없을 때만 기기 음성 인식으로 대신합니다.</li>
+            <li>아직 문장이 끝나지 않은 말은 화면 아래 <b>인식 중</b> 줄에 머물렀다가, 문장 부호( . ? ! )가 나오면 완결된 문장만 설정한 번역 엔진(기본·Groq·Gemini·OpenAI)으로 번역되어 쌓입니다.</li>
+            <li>번역할 때 <b>직전 자막 2문장</b>이 문맥으로 함께 전달되어, 음성인식이 잘못 들은 단어·고유명사를 문맥으로 바로잡습니다.</li>
             <li><b>가 보통/크게/특대</b>로 글자를 키우고, <b>전체 복사</b>로 자막을 메모에 붙여 넣을 수 있습니다.</li>
           </ol>
         </div>
@@ -1703,7 +1704,7 @@
     return sysAnyAny(from, to);
   }
 
-  function translateOpenAI(text, from, to) {
+  function translateOpenAI(text, from, to, sys) {
     var key = (settings.openaiKey || '').trim();
     if (!key) return Promise.reject(new Error('NO_KEY'));
     var model = (settings.openaiModel || 'gpt-4o-mini').trim();
@@ -1712,7 +1713,7 @@
       temperature: 0.2,
       max_tokens: 500,
       messages: [
-        { role: 'system', content: sysPrompt(from, to) },
+        { role: 'system', content: sys || sysPrompt(from, to) },
         { role: 'user', content: text }
       ]
     };
@@ -1817,11 +1818,11 @@
     });
   }
 
-  function geminiRequest(text, from, to, model, key) {
+  function geminiRequest(text, from, to, model, key, sys) {
     var url = 'https://generativelanguage.googleapis.com/v1beta/models/' +
       encodeURIComponent(model) + ':generateContent?key=' + encodeURIComponent(key);
     var body = {
-      systemInstruction: { parts: [{ text: sysPrompt(from, to) }] },
+      systemInstruction: { parts: [{ text: sys || sysPrompt(from, to) }] },
       contents: [{ role: 'user', parts: [{ text: text }] }],
       generationConfig: { temperature: 0.2, maxOutputTokens: 600 }
     };
@@ -1846,15 +1847,15 @@
     });
   }
 
-  function translateGemini(text, from, to) {
+  function translateGemini(text, from, to, sys) {
     var key = (settings.geminiKey || '').trim();
     if (!key) return Promise.reject(new Error('NO_KEY'));
     var model = String(settings.geminiModel || '').trim() || GEMINI_MODEL_DEFAULT;
-    return geminiRequest(text, from, to, model, key).catch(function (e) {
+    return geminiRequest(text, from, to, model, key, sys).catch(function (e) {
       if (!isGeminiModelError(e)) throw e;
       // 모델 미지원·지원 종료 → 이 키로 쓸 수 있는 Gemini 4/3 텍스트 모델로 바꿔 1회만 재시도
       return autoFixGeminiModel(key, model).then(function (next) {
-        return geminiRequest(text, from, to, next, key);
+        return geminiRequest(text, from, to, next, key, sys);
       }, function () { throw e; });
     });
   }
@@ -1862,7 +1863,7 @@
   /* ───────── 번역: Groq (무료 하루 1,000회) ───────── */
   var GROQ_ENDPOINT = 'https://api.groq.com/openai/v1/chat/completions';
 
-  function translateGroq(text, from, to) {
+  function translateGroq(text, from, to, sys) {
     var key = (settings.groqKey || '').trim();
     if (!key) return Promise.reject(new Error('NO_KEY'));
     var model = (settings.groqModel || '').trim() || GROQ_MODEL_DEFAULT;
@@ -1871,7 +1872,7 @@
       temperature: 0.2,
       max_tokens: 500,
       messages: [
-        { role: 'system', content: sysPrompt(from, to) },
+        { role: 'system', content: sys || sysPrompt(from, to) },
         { role: 'user', content: text }
       ]
     };
@@ -1903,11 +1904,40 @@
       function (e) { clearTimeout(timer); throw e; });
   }
 
-  function translate(text, from, to) {
-    if (settings.engine === 'openai') return translateOpenAI(text, from, to);
-    if (settings.engine === 'gemini') return translateGemini(text, from, to);
-    if (settings.engine === 'groq') return translateGroq(text, from, to);
-    return translateBasic(text, from, to);
+  function translate(text, from, to, sys) {
+    if (settings.engine === 'openai') return translateOpenAI(text, from, to, sys);
+    if (settings.engine === 'gemini') return translateGemini(text, from, to, sys);
+    if (settings.engine === 'groq') return translateGroq(text, from, to, sys);
+    return translateBasic(text, from, to);   // 기본 엔진(MyMemory)은 문맥 프롬프트를 받지 않는다
+  }
+
+  /* ───────── 실시간 자막 전용 번역 ─────────
+     음성인식(ASR) 결과 특유의 오인식을 앞 문맥으로 바로잡고, 깔끔한 자막 한 문장만 받는다.
+     ctx: 최근 확정 자막 [{src, dst, from, to}] — 최대 2문장
+  ─────────────────────────────────────────── */
+  function subAsrInstruction(to) {
+    return 'IMPORTANT: The input is a live speech-recognition (ASR) transcript of a conference talk or broadcast, so it may contain ' +
+      'misheard words, homophones and wrong proper nouns. Silently correct obviously misheard words using the preceding context and ' +
+      'the meaning of the whole sentence (leave names and numbers as heard unless clearly wrong), then translate the corrected sentence. ' +
+      'Return exactly one clean subtitle sentence in ' + (LANG_EN[to] || 'the target language') + ' — no explanations, no quotation marks, no alternatives, no notes.';
+  }
+
+  function subSysPrompt(from, to, ctx) {
+    var sys = sysPrompt(from, to) + ' ' + subAsrInstruction(to);
+    if (ctx && ctx.length) {
+      var lines = ctx.map(function (c, i) {
+        return (i + 1) + ') ' + (LANG_EN[c.from] || c.from) + ': ' + c.src + '\n   → ' + (LANG_EN[c.to] || c.to) + ': ' + c.dst;
+      });
+      sys += ' Preceding subtitle lines (oldest first) for context — keep names, terms and the flow consistent with them:\n' + lines.join('\n');
+    }
+    return sys;
+  }
+
+  function translateSubtitleSentence(text, from, to, ctx) {
+    var src = cleanOut(text);
+    if (!src) return Promise.resolve('');
+    var sys = subSysPrompt(from, to, ctx || []);
+    return translate(src, from, to, sys);
   }
 
   function friendlyError(e) {
@@ -2903,6 +2933,15 @@
   var SUB_COMMIT_CHARS_EN = 80;      // interim 이만큼 쌓이면 확정 없이도 앞부분을 자막으로 올린다
   var SUB_COMMIT_CHARS_CJK = 48;
   var SUB_COMMIT_MS = 3500;          // 확정 없이 이만큼 지나면 끊어서 올린다
+  /* ── 문장 단위 버퍼링 ──
+     들어온 인식 텍스트는 곧바로 자막이 되지 않고 pendingSentenceBuf에 쌓인다.
+     문장 종결 부호가 나오면 그 문장만 번역 큐로 보내고, 꼬리는 프리뷰 바에 남겨
+     다음 청크와 이어 붙인다. 아래 수치는 부호 없이 길어질 때의 강제 flush 기준. */
+  var SUB_BUF_MAX_CHARS = 160;       // 라틴 계열 — 이만큼 길어지면 끊어서 올린다
+  var SUB_BUF_MAX_CJK = 90;          // 한국어·일본어·중국어
+  var SUB_BUF_FLUSH_MS = 4000;       // 새 단어가 이만큼 없고 무음이면 강제 flush
+  var SUB_CTX_LINES = 2;             // 번역에 넘길 직전 확정 자막 문장 수(원문+번역문)
+  var SUB_PROMPT_CHARS = 180;        // Whisper prompt로 넘길 직전 문장 끝부분 길이
   var SUB_MIN_COMMIT = 22;           // 너무 짧은 조각은 올리지 않는다
   var SUB_WATCHDOG_MS = 8000;        // onresult가 이만큼 없으면 인식을 새로 시작한다
   var SUB_LEVEL_SILENT = 0.012;      // 이 아래면 사실상 무음
@@ -2944,6 +2983,15 @@
     watchdog: null,
     skipped: 0,            // 무음이라 건너뛴 청크 수
     silent: false,         // 현재 수음이 무음인지
+    // ── 문장 단위 버퍼(pendingSentenceBuf) ──
+    buf: '',               // 아직 문장이 끝나지 않은 꼬리
+    bufFrom: 'en',         // 이 꼬리의 원문 언어
+    bufTag: '',            // 자동 감지일 때 표시할 언어 이름
+    bufAt: 0,              // 마지막으로 새 단어가 붙은 시각
+    bufTimer: null,        // 강제 flush 감시
+    srcLang: '',           // 현재 듣고 있는 원문 언어
+    live: '',              // Web Speech가 지금 듣고 있는(아직 버퍼에 안 넣은) 말
+    recent: [],            // 최근 인식 텍스트(중복·환각 판정용)
     // ── 자막 음성 듣기(이어폰 TTS) ──
     ttsQ: [],              // 재생 대기열 [{text, lang, force}]
     ttsBusy: false,        // 지금 말하는 중
@@ -3200,18 +3248,17 @@
     return (sum / a.length) < SUB_CHUNK_SILENT_MEAN && peak < SUB_CHUNK_SILENT_PEAK;
   }
 
-  /* ── 강연·스피커 수음 안내(자동 감지 = Groq Whisper 권장) ── */
+  /* ── 강연·스피커 수음 안내 ──
+     Groq 키가 있으면 모든 언어가 Whisper로 듣는다. 키가 없을 때만 기기 인식으로 대신한다. */
   function paintSubHint() {
     var box = $('subHint');
     if (!box) return;
     var hasKey = !!(settings.groqKey || '').trim();
-    var show = !SUB.active && settings.subLang !== 'auto';
+    var show = !SUB.active && !hasKey;
     box.classList.toggle('show', show);
     if (!show) return;
-    $('subHintText').innerHTML = hasKey
-      ? '🎙 강연·TV/PC 스피커 수음은 <b>🤖 자동 감지(Groq Whisper)</b>가 훨씬 안정적입니다'
-      : '🎙 강연·TV/PC 스피커 수음은 <b>🤖 자동 감지(Groq Whisper)</b>로 받아쓸 수 있습니다 — Groq 키 필요';
-    $('subHintGo').textContent = hasKey ? '전환' : '설정';
+    $('subHintText').innerHTML = '🎙 지금은 기기 음성 인식으로 듣습니다 — <b>Groq 키를 넣으면 모든 언어에서 고정밀 Whisper 인식</b>이 작동합니다';
+    $('subHintGo').textContent = '설정';
   }
 
   function subPaintStatus() {
@@ -3219,9 +3266,10 @@
     if (!SUB.active) {
       msg = SUB.lines.length ? '멈춤 — ▶ 자막 시작을 누르면 이어집니다' : '대기 — ▶ 자막 시작을 누르세요';
     } else {
+      var cfg = subCfg();
       var base = SUB.mode === 'whisper'
-        ? ('녹음 중 · 자동 감지(Whisper)' + (SUB.silent ? ' · 무음' : ' · 수음 중'))
-        : '듣는 중 · ' + subCfg().name;
+        ? ('녹음 중 · Whisper ' + (settings.subLang === 'auto' ? '자동 감지' : cfg.name) + (SUB.silent ? ' · 무음' : ' · 수음 중'))
+        : '듣는 중 · ' + cfg.name;
       if (SUB.pending > 0) { cls = 'dot busy'; msg = base + ' · 번역 중…'; }
       else { cls = 'dot live'; msg = base; }
     }
@@ -3232,11 +3280,12 @@
   function subPaintInterim() {
     var box = $('subInterim'), lbl = $('subInterimLbl'), tx = $('subInterimText');
     var live = String(SUB.interim || '').trim();
-    if (!SUB.active) { box.classList.remove('show'); return; }
-    if (SUB.mode === 'whisper' && !live) {
-      lbl.textContent = '녹음';
+    if (!SUB.active) { box.classList.remove('show'); return; }    if (SUB.mode === 'whisper' && !live) {
+      lbl.textContent = 'Whisper';
       lbl.className = 'sub-interim-lbl';
-      tx.innerHTML = '<em>4초씩 끊어 듣고 언어를 자동 판별합니다 · 조용하면 API 호출을 건너뜁니다…</em>';
+      tx.innerHTML = settings.subLang === 'auto'
+        ? '<em>자동 감지로 듣는 중 · 4~6초씩 끊어 받아쓰고 문장이 끝나면 바로 번역합니다 · 조용하면 API 호출을 건너뜁니다…</em>'
+        : '<em>' + esc(subCfg().name) + '로 듣는 중 · 4~6초씩 끊어 받아쓰고 문장이 끝나면 바로 번역합니다…</em>';
       box.classList.add('show');
       return;
     }
@@ -3311,6 +3360,168 @@
   $('subStage').addEventListener('scroll', subPaintJump);
   $('subJump').addEventListener('click', function () { subScrollToEnd(true); });
 
+  /* ── 문장 단위 버퍼(pendingSentenceBuf) ──────────────────
+     Whisper·SpeechRecognition이 준 텍스트를 곰바로 자막으로 올리지 않고 여기에 쌓는다.
+     문장 종결 부호가 나오면 완결된 문장만 번역 큐로 넘기고, 남은 꼬리는 '인식 중' 줄에
+     보여 주다가 다음 청크와 이어 붙인다. 꼬리가 너무 길어지거나 무음이 이어지면 강제 flush.
+  ─────────────────────────────────────────────────────── */
+  var SUB_TERM = /[.!?。？！]/;
+  var SUB_ABBR = /(?:^|[\s"'(])(mr|mrs|ms|dr|prof|st|no|vs|inc|ltd|jr|sr|e\.g|i\.e)\.$/i;
+  // Whisper가 무음·잡음 구간에서 지어내는 대표 문구
+  var SUB_NOISE_ALWAYS = [
+    '시청해주셔서감사합니다', 'mbc뉴스', '자막제공', '한국어자막', '구독과좋아요',
+    'subtitlesby', 'amaraorg', 'transcriptionby', 'thanksforwatching', 'thankyouforwatching',
+    'pleasesubscribe', '자막 by'
+  ];
+  // 한 번은 진짜 말일 수 있어, 반복될 때만 잡는 문구
+  var SUB_NOISE_IF_REPEAT = ['thankyou', 'thankyousomuch', '고맙습니다', '감사합니다', 'music', '음악', 'applause', '박수', 'laughter', '웃음소리'];
+
+  function subIsCjkLang(lang) { return lang === 'ko' || lang === 'ja' || lang === 'zh'; }
+  function subBufLimit(lang) { return subIsCjkLang(lang) ? SUB_BUF_MAX_CJK : SUB_BUF_MAX_CHARS; }
+  function subNormKey(t) {
+    return String(t || '').toLowerCase().replace(/[^0-9a-z\uAC00-\uD7A3\u3040-\u30FF\u4E00-\u9FFF]/g, '');
+  }
+
+  // 무의미 반복 환각 · 직전 텍스트 100% 중복 걸러내기
+  function subIsNoise(t) {
+    var key = subNormKey(t);
+    if (!key) return true;
+    var recent = SUB.recent || [];
+    if (recent.length && key === recent[recent.length - 1]) return true;            // 직전과 100% 중복
+    if (recent.filter(function (x) { return x === key; }).length >= 2) return true; // 같은 문구 반복
+    for (var i = 0; i < SUB_NOISE_ALWAYS.length; i++) {
+      var p = subNormKey(SUB_NOISE_ALWAYS[i]);
+      if (key === p || (key.length <= 20 && key.indexOf(p) >= 0)) return true;
+    }
+    for (var j = 0; j < SUB_NOISE_IF_REPEAT.length; j++) {
+      if (key === subNormKey(SUB_NOISE_IF_REPEAT[j]) && recent.indexOf(key) >= 0) return true;
+    }
+    return false;
+  }
+
+  // 청크가 앞 문장 꼬리를 물고 오면 겹친 앞부분을 덜어낸다
+  function subStripOverlap(t, against) {
+    var a = String(t || ''), b = String(against || '');
+    if (!a || !b) return a;
+    var max = Math.min(a.length, b.length, 80);
+    var min = subIsCjkLang(SUB.bufFrom) ? 8 : 14;
+    for (var k = max; k >= min; k--) {
+      if (a.slice(0, k) === b.slice(b.length - k)) return cleanOut(a.slice(k));
+    }
+    return a;
+  }
+
+  // 완결된 문장들만 덜어낸다 — 꼬리(rest)는 다음 청크와 이어 붙인다
+  function subTakeSentences(s) {
+    var str = String(s || '');
+    var out = [], start = 0;
+    for (var i = 0; i < str.length; i++) {
+      var c = str.charAt(i);
+      if (!SUB_TERM.test(c)) continue;
+      var next = i + 1 < str.length ? str.charAt(i + 1) : '';
+      var prev = i > 0 ? str.charAt(i - 1) : '';
+      if (c === '.') {
+        if (prev === '.' && !next) continue;                               // 말줄임표(…)는 아직 끝나지 않은 말
+        if (/\d/.test(prev) && /\d/.test(next)) continue;                  // 3.5
+        if (/[A-Za-z]/.test(prev) && /[A-Za-z]/.test(next)) continue;      // U.S.A
+        if (SUB_ABBR.test(str.slice(Math.max(0, i - 8), i + 1))) continue; // Mr. No. e.g.
+        // 라틴 문자 문장은 부호 뒤에 공백·닫는 부호·끝이어야 문장 끝 (사이트 주소 보호)
+        if (next && !/[\s"'”’)\]}】」』]/.test(next)) continue;
+      }
+      var piece = cleanOut(str.slice(start, i + 1));
+      if (piece) {
+        if (out.length && piece.length <= 2) out[out.length - 1] += (subIsCjkLang(SUB.bufFrom) ? '' : ' ') + piece;
+        else out.push(piece);
+      }
+      start = i + 1;
+    }
+    var rest = cleanOut(str.slice(start));
+    return { out: out, rest: rest };
+  }
+
+  // 인식 텍스트가 들어오는 유일한 입구 (Whisper · SpeechRecognition 공통)
+  function subIngest(raw, from, tag) {
+    var t = cleanOut(raw);
+    if (!t) return;
+    if (!isLang(from)) {
+      from = (settings.subLang !== 'auto' && isLang(settings.subLang)) ? settings.subLang : (SUB.srcLang || 'en');
+    }
+    if (subIsNoise(t)) return;
+    var prevSrc = SUB.lines.length ? SUB.lines[SUB.lines.length - 1].src : '';
+    t = subStripOverlap(t, (SUB.buf || '') + ' ' + prevSrc);
+    if (!t) return;
+    SUB.recent.push(subNormKey(t));
+    if (SUB.recent.length > 6) SUB.recent.shift();
+    SUB.srcLang = from;
+    SUB.bufFrom = from;
+    SUB.bufTag = tag || '';
+    var sep = subIsCjkLang(from) ? '' : ' ';
+    SUB.buf = SUB.buf ? cleanOut(SUB.buf + sep + t) : t;
+    SUB.bufAt = Date.now();
+    subBufDrain();
+  }
+
+  // 쌓인 버퍼에서 완결된 문장만 자막으로 올리고, 꼬리는 프리뷰에 남긴다
+  function subBufDrain() {
+    var r = subTakeSentences(SUB.buf);
+    var from = SUB.bufFrom, tag = SUB.bufTag;
+    r.out.forEach(function (p) { subPushSentence(p, from, tag); });
+    SUB.buf = r.rest;
+    SUB.interim = SUB.buf;
+    // 부호 없이 한도를 넘으면 자연스러운 경계에서 끊어 올린다
+    var guard = 0;
+    while (SUB.buf && SUB.buf.length >= subBufLimit(from) && guard++ < 8) subFlushBuf(false);
+    subPaintInterim();
+  }
+
+  // 남은 꼬리를 지금 올린다 — whole=true 면 통째로(무음·종료), false 면 한도에서 잘라
+  function subFlushBuf(whole) {
+    var b = cleanOut(SUB.buf);
+    if (!b) { SUB.buf = ''; SUB.interim = ''; subPaintInterim(); return; }
+    var from = SUB.bufFrom, tag = SUB.bufTag;
+    var hard = subBufLimit(from);
+    var head = b, rest = '';
+    if (whole !== true && b.length > hard) {
+      var win = b.slice(0, hard + 20);
+      var cut = -1;
+      var m = win.match(/^[\s\S]*[.,;:。，、!?？！]/);
+      if (m && m[0].length >= 20) cut = m[0].length;
+      if (cut < 20) { var sp = win.lastIndexOf(' '); if (sp >= 20) cut = sp; }
+      if (cut < 20) cut = hard;
+      head = cleanOut(b.slice(0, cut));
+      rest = cleanOut(b.slice(cut));
+    }
+    SUB.buf = rest;
+    SUB.interim = rest;
+    SUB.bufAt = Date.now();
+    if (head) subPushSentence(head, from, tag);
+    subPaintInterim();
+  }
+
+  // 4초 이상 새 단어가 없고 무음이 이어지면 강제 flush (지연이 쌓이지 않게)
+  function subBufTick() {
+    if (!SUB.active || !SUB.buf) return;
+    var idle = Date.now() - SUB.bufAt;
+    if (idle < SUB_BUF_FLUSH_MS) return;
+    // Whisper는 실제 무음일 때만 끊는다(말이 이어지는 중이면 다음 청크를 기다린다)
+    if (SUB.mode === 'whisper' && !SUB.silent && idle < SUB_BUF_FLUSH_MS * 2) return;
+    subFlushBuf(true);
+  }
+
+  function subBufClear() {
+    SUB.buf = '';
+    SUB.bufAt = 0;
+    SUB.bufTag = '';
+    SUB.recent = [];
+  }
+
+  function subBufReset() {
+    subBufClear();
+    SUB.bufFrom = 'en';
+    SUB.live = '';
+    clearInterval(SUB.bufTimer); SUB.bufTimer = null;
+  }
+
   /* ── 문장 확정 → 번역 대기열 → 자막 추가 ── */
   function subSplitSentences(t) {
     var s = String(t || '').trim();
@@ -3342,21 +3553,42 @@
     subScrollToEnd(false);
   }
 
+  // 번역기에 넘길 문맥 — 최근 확정 자막 2문장(원문+번역문)
+  function subContextLines() {
+    var out = [];
+    for (var i = SUB.lines.length - 1; i >= 0 && out.length < SUB_CTX_LINES; i--) {
+      var l = SUB.lines[i];
+      if (!l || l.pending || l.err || !l.dst || !l.src) continue;
+      out.unshift({ src: l.src, dst: l.dst, from: l.from, to: l.to });
+    }
+    return out;
+  }
+
+  // Whisper prompt — 직전 확정 문장의 끝부분(최대 ~180자)으로 고유명사·문맥을 이어 준다
+  function subWhisperPrompt() {
+    var tail = '';
+    for (var i = SUB.lines.length - 1; i >= 0 && tail.length < SUB_PROMPT_CHARS; i--) {
+      var s = SUB.lines[i].src || '';
+      if (!s) continue;
+      tail = tail ? (s + ' ' + tail) : s;
+    }
+    if (SUB.buf) tail = tail ? (tail + ' ' + SUB.buf) : SUB.buf;
+    tail = cleanOut(tail);
+    return tail.length > SUB_PROMPT_CHARS ? tail.slice(tail.length - SUB_PROMPT_CHARS) : tail;
+  }
+
   function subPushSentence(text, from, tag) {
     var src = cleanOut(text);
     if (!src) return;
     // 같은 문장이 짧은 간격으로 다시 인식되면 한 번만
     if (src === SUB.lastFinal && (Date.now() - SUB.lastFinalAt) < 1400) return;
-    // Whisper 청크가 앞 문장을 물고 오는 경우 겹친 앞부분을 덜어낸다
     var prev = SUB.lines.length ? SUB.lines[SUB.lines.length - 1] : null;
-    if (prev && prev.src && src.length > prev.src.length && src.indexOf(prev.src) === 0) {
-      src = cleanOut(src.slice(prev.src.length));
-      if (!src) return;
-    } else if (prev && prev.src === src) return;
+    if (prev && prev.src === src) return;
     SUB.lastFinal = src;
     SUB.lastFinalAt = Date.now();
 
     var to = from === 'ko' ? 'en' : 'ko';
+    var ctx = subContextLines();
     var line = { id: ++SUB.seq, src: src, dst: '', err: '', pending: true, from: from, to: to, tag: tag || '' };
     SUB.lines.push(line);
     $('subLines').insertAdjacentHTML('beforeend', subItemHTML(line));
@@ -3366,7 +3598,7 @@
     SUB.pending++;
     subPaintStatus();
     SUB.queue = SUB.queue.then(function () {
-      return translate(src, from, to).then(function (t) {
+      return translateSubtitleSentence(src, from, to, ctx).then(function (t) {
         line.dst = t; line.err = ''; line.pending = false;
       }, function (e) {
         line.err = friendlyError(e); line.pending = false;
@@ -3430,7 +3662,7 @@
   function subCommitInterim(head) {
     var s = cleanOut(head);
     if (!s) return;
-    subPushSentence(s, subCfg().tr, '');
+    subIngest(s, subCfg().tr, '');
     SUB.webCommits.push({ text: s, at: Date.now() });
     if (SUB.webCommits.length > 8) SUB.webCommits.shift();
   }
@@ -3441,7 +3673,7 @@
     var r = SUB.recog;
     SUB.recog = null;
     clearTimeout(SUB.watchdog); SUB.watchdog = null;
-    SUB.interim = ''; SUB.interimAt = 0;
+    SUB.interim = ''; SUB.live = ''; SUB.interimAt = 0;
     subPaintInterim();
     if (r) { try { r.abort(); } catch (e) { } }
     SUB.webCommits = [];
@@ -3523,21 +3755,21 @@
       if (finals) {
         SUB.interimAt = 0;
         var done = subStripCommits(cleanOut(finals));
-        if (done) subSplitSentences(done).forEach(function (p) { subPushSentence(p, cfg.tr, ''); });
+        if (done) subIngest(done, cfg.tr, '');
       }
-      SUB.interim = subStripCommits(cleanOut(interim), true);
-      if (SUB.interim) {
+      var live = subStripCommits(cleanOut(interim), true);
+      if (live) {
         if (!SUB.interimAt) SUB.interimAt = Date.now();
         subMicBadge('말소리', 'live');
         var lim = subCommitChars();
-        var long = SUB.interim.length >= lim;
+        var long = live.length >= lim;
         var stuck = (Date.now() - SUB.interimAt) >= SUB_COMMIT_MS;
         if (long || stuck) {
-          var sp = subSplitInterim(SUB.interim, lim);
+          var sp = subSplitInterim(live, lim);
           if (sp) {
             subCommitInterim(sp.head);
-            SUB.interim = sp.tail;
-            SUB.interimAt = sp.tail ? Date.now() : 0;
+            live = sp.tail;
+            SUB.interimAt = live ? Date.now() : 0;
             SUB.lastResultAt = Date.now();
             subWebWatchdog();
           }
@@ -3545,6 +3777,11 @@
       } else {
         SUB.interimAt = 0;
       }
+      // 프리뷰 = 문장이 끝나지 않아 쌓아 둔 꼬리(버퍼) + 지금 듣고 있는 말
+      SUB.live = live;
+      var tailBuf = SUB.buf ? cleanOut(SUB.buf) : '';
+      var sep = subIsCjkLang(cfg.tr) ? '' : ' ';
+      SUB.interim = (tailBuf && live) ? cleanOut(tailBuf + sep + live) : (tailBuf || live);
       subPaintInterim();
     };
     r.onerror = function (ev) {
@@ -3568,7 +3805,7 @@
       if (code === 'language-not-supported' || code === 'language_not_supported') {
         SUB.interim = ''; subPaintInterim();
         subStop(true);
-        toast('이 기기의 음성 인식이 ' + cfg.name + '를 지원하지 않습니다. 🤖 자동 감지(Groq Whisper)를 고르면 ' + cfg.name + '도 받아쓸 수 있습니다(Groq 키 필요).', 6400);
+        toast('이 기기의 음성 인식이 ' + cfg.name + '를 지원하지 않습니다. 설정 → Groq에 키를 넣으면 모든 언어에서 Whisper 인식이 작동합니다.', 6400);
         return;
       }
       toast('음성 인식 오류: ' + (code || 'unknown'), 3200);
@@ -3577,15 +3814,17 @@
       if (SUB.recog !== r) return;
       SUB.recog = null;
       clearTimeout(SUB.watchdog); SUB.watchdog = null;
-      // 아직 확정되지 않은 말이 있으면 잃지 않도록 지금 올린다
-      var tail = cleanOut(SUB.interim);
+      // 아직 확정되지 않은 말이 있으면 잃지 않도록 지금 올린다 (이미 버퍼에 든 꼬리는 제외)
+      var tail = cleanOut(SUB.live);
+      SUB.live = '';
       SUB.interim = '';
       SUB.interimAt = 0;
       subPaintInterim();
       if (tail) {
         var tc = tail.replace(/[\s.,!?;:。？！，、]/g, '');
-        if (tc.length >= (/[A-Za-z]/.test(tc) ? 10 : 4)) subPushSentence(tail, cfg.tr, '');
+        if (tc.length >= (/[A-Za-z]/.test(tc) ? 10 : 4)) subIngest(tail, cfg.tr, '');
       }
+      if (SUB.buf) subFlushBuf(true);   // 세션이 끝나면 남은 꼬리도 올린다
       SUB.webCommits = [];
       subMicBadge('대기', '');
       if (!SUB.active) { subPaintStatus(); return; }
@@ -3621,22 +3860,37 @@
     return '';
   }
 
+  /* ── 실시간 자막 녹음: Groq Whisper ──
+     🤖 자동 감지뿐 아니라 개별 언어(EN·JA·ZH·KO·ES·FR·DE·VI·TH)도 같은 경로로 듣는다.
+     개별 언어를 고르면 Whisper에 language 코드를 명시해 TV·스피커 소리도 정확히 받아쓴다.
+  ──────────────────────────────────────── */
+  function subWhisperLangCode() {
+    var key = settings.subLang;
+    if (!key || key === 'auto') return '';
+    return SUB_LANGS[key] ? key : '';
+  }
+
   function subStartWhisper() {
     if (!SUB.active) return;
     var key = (settings.groqKey || '').trim();
+    var isAuto = settings.subLang === 'auto';
     if (!key) {
       subStop(true);
-      toast('자동 감지에는 Groq API 키가 필요합니다. 설정 → Groq에 gsk_ 키를 넣거나, 위에서 듣기 언어를 직접 고르세요.', 6800);
+      toast(isAuto
+        ? '자동 감지에는 Groq API 키가 필요합니다. 설정 → Groq에 gsk_ 키를 넣거나, 위에서 듣기 언어를 직접 고르세요.'
+        : 'Groq API 키가 없어 기기 음성 인식(SpeechRecognition)으로 듣습니다. 키를 넣으면 모든 언어에서 고정밀 Whisper 인식이 작동합니다.', 6800);
       return;
     }
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia || !window.MediaRecorder) {
+      // Whisper 녹음이 불가능한 브라우저 — 개별 언어는 기기 음성 인식으로 대체, 자동 감지는 중단
+      if (!isAuto && srCtor()) { subStartWeb(); return; }
       subStop(true);
-      toast('이 브라우저에서는 자동 감지 녹음을 지원하지 않습니다. 언어를 직접 선택해 주세요.', 5400);
+      toast('이 브라우저에서는 Whisper 녹음을 지원하지 않습니다. 크롬에서 HTTPS 주소로 열어 주세요.', 5400);
       return;
     }
     subGetMic()
       .then(function (stream) {
-        if (!SUB.active || settings.subLang !== 'auto') {
+        if (!SUB.active) {
           try { stream.getTracks().forEach(function (t) { t.stop(); }); } catch (e) { }
           return;
         }
@@ -3684,7 +3938,7 @@
       try { rec = new MediaRecorder(SUB.stream); }
       catch (e2) {
         subStop(true);
-        toast('녹음을 시작하지 못했습니다. 언어를 직접 선택해 Web Speech로 사용하세요.', 5400);
+        toast('녹음을 시작하지 못했습니다. 잠시 후 ▶ 자막 시작을 다시 눌러 주세요.', 5400);
         return;
       }
     }
@@ -3737,6 +3991,12 @@
     fd.append('model', 'whisper-large-v3-turbo');
     fd.append('response_format', 'verbose_json');
     fd.append('temperature', '0');
+    // 개별 언어 선택 — language를 명시해 그 언어로 받아쓴다
+    var langCode = subWhisperLangCode();
+    if (langCode) fd.append('language', langCode);
+    // 직전 확정 문장 끝부분을 prompt로 넘겨 고유명사·문맥 연속성을 높인다
+    var hint = subWhisperPrompt();
+    if (hint) fd.append('prompt', hint);
     SUB.pending++;
     subPaintStatus();
     fetchWithTimeout('https://api.groq.com/openai/v1/audio/transcriptions', {
@@ -3759,8 +4019,13 @@
       var info = WHISPER_LANGS[detected] || null;
       // 소리 없는 구간의 잡음·환각 응답은 버린다
       if (!text || !/[0-9A-Za-z\uAC00-\uD7A3\u3040-\u30FF\u4E00-\u9FFF]/.test(text)) { subPaintStatus(); return; }
-      if (!info) { subPushUnsupported(text, detected || 'unknown'); subPaintStatus(); return; }
-      subPushSentence(text, info.tr, info.name);
+      // 개별 언어는 지정한 언어로, 자동 감지는 Whisper가 알려 준 언어로 받아쓴다
+      if (langCode) {
+        subIngest(text, langCode, '');
+      } else {
+        if (!info) { subPushUnsupported(text, detected || 'unknown'); subPaintStatus(); return; }
+        subIngest(text, info.tr, info.name);
+      }
       subPaintStatus();
     }).catch(function (e) {
       SUB.pending = Math.max(0, SUB.pending - 1);
@@ -3777,27 +4042,35 @@
     if (SUB.active) return;
     var key = SUB_LANGS[settings.subLang] ? settings.subLang : 'en';
     settings.subLang = key;
+    var hasKey = !!(settings.groqKey || '').trim();
+    var canRec = !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia && window.MediaRecorder);
+    var useWhisper = hasKey && canRec;      // 키가 있으면 언어와 상관없이 Whisper 우선
     if (key === 'auto') {
-      if (!(settings.groqKey || '').trim()) {
+      if (!hasKey) {
         toast('자동 감지에는 Groq API 키가 필요합니다. 설정 → Groq에 gsk_ 키를 넣거나, 위에서 듣기 언어를 직접 고르세요.', 6800);
         return;
       }
-      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia || !window.MediaRecorder) {
-        toast('이 브라우저에서는 자동 감지 녹음을 지원하지 않습니다. 언어를 직접 선택해 주세요.', 5400);
+      if (!canRec) {
+        toast('이 브라우저에서는 Whisper 녹음을 지원하지 않습니다. 크롬에서 HTTPS 주소로 열어 주세요.', 5400);
         return;
       }
-    } else if (!srCtor()) {
-      toast('이 브라우저는 음성 인식을 지원하지 않습니다. 크롬에서 HTTPS 주소로 열어 주세요.', 5200);
+    } else if (!useWhisper && !srCtor()) {
+      toast('이 브라우저는 음성 인식을 지원하지 않습니다. 설정에서 Groq 키를 넣거나 크롬·HTTPS로 열어 주세요.', 5400);
       return;
     }
     SUB.active = true;
-    SUB.mode = key === 'auto' ? 'whisper' : 'web';
+    SUB.mode = useWhisper ? 'whisper' : 'web';
     SUB.restarts = 0;
     SUB.lastFinal = '';
     SUB.webCommits = [];
     SUB.interimAt = 0;
     SUB.skipped = 0;
     SUB.silent = false;
+    SUB.srcLang = key === 'auto' ? '' : key;
+    subBufReset();
+    SUB.bufFrom = key === 'auto' ? 'en' : key;
+    clearInterval(SUB.bufTimer);
+    SUB.bufTimer = setInterval(subBufTick, 400);
     paintSubToggle();
     paintSubHint();
     requestSubWake();
@@ -3811,8 +4084,11 @@
 
   function subStop(silent) {
     var wasActive = SUB.active;
+    // 아직 문장이 끝나지 않은 꼬리도 잃지 않고 올린다
+    if (wasActive && SUB.buf) subFlushBuf(true);
     SUB.active = false;
     SUB.mode = null;
+    clearInterval(SUB.bufTimer); SUB.bufTimer = null;
     subTtsStop();          // 🎧 듣기 — 음성과 대기열을 즉시 끊는다
     clearTimeout(SUB.restartTimer); SUB.restartTimer = null;
     clearTimeout(SUB.chunkTimer); SUB.chunkTimer = null;
@@ -3831,6 +4107,7 @@
     SUB.webCommits = [];
     SUB.interimAt = 0;
     SUB.interim = '';
+    SUB.live = '';
     subPaintInterim();
     subPaintStatus();
     paintSubToggle();
@@ -3843,6 +4120,10 @@
     subTtsStop();
     SUB.lines = [];
     SUB.lastFinal = '';
+    subBufClear();
+    SUB.live = '';
+    SUB.interim = '';
+    subPaintInterim();
     $('subLines').innerHTML = '';
     $('subEmpty').style.display = '';
     subPaintJump();
