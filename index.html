@@ -4593,6 +4593,17 @@
       micStart: function (stream) { return subMicStart(stream); },
       micStop: subMicStop,
       status: function () { return $('subStatusText').textContent; },
+      // 문장 버퍼 · Whisper 파라미터 · 문맥 프롬프트 확인용 (2026-11-22)
+      ingest: function (src, from, tag) {
+        subIngest(src, from || 'en', tag || '');
+        return { buf: SUB.buf, preview: SUB.interim, lines: SUB.lines.length };
+      },
+      buffer: function () { return { buf: SUB.buf, preview: SUB.interim, from: SUB.bufFrom, tag: SUB.bufTag }; },
+      flush: function (whole) { subFlushBuf(whole !== false); return { buf: SUB.buf, lines: SUB.lines.length }; },
+      whisperLang: subWhisperLangCode,
+      whisperPrompt: subWhisperPrompt,
+      asrSystemPrompt: function (from, to) { return subSysPrompt(from || 'en', to || 'ko', subContextLines()); },
+      context: function () { return subContextLines(); },
       start: subStart,
       stop: function () { subStop(true); },
       clear: subClear,
