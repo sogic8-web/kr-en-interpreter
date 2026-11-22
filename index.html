@@ -3326,6 +3326,22 @@
     return out.length ? out : [s];
   }
 
+  /* ── 자동 감지가 지원하지 않는 언어를 잡았을 때 ──
+     영어로 단정해 번역하면 엉뚱한 자막이 되므로, 원문만 보여 주고 안내를 남긴다. */
+  function subPushUnsupported(text, name) {
+    var src = cleanOut(text);
+    if (!src) return;
+    var line = {
+      id: ++SUB.seq, src: src, dst: '', pending: false,
+      err: '지원하지 않는 언어(' + name + ') — 위에서 듣기 언어를 직접 고르세요',
+      from: '', to: 'ko', tag: name
+    };
+    SUB.lines.push(line);
+    $('subLines').insertAdjacentHTML('beforeend', subItemHTML(line));
+    $('subEmpty').style.display = 'none';
+    subScrollToEnd(false);
+  }
+
   function subPushSentence(text, from, tag) {
     var src = cleanOut(text);
     if (!src) return;
@@ -3743,7 +3759,8 @@
       var info = WHISPER_LANGS[detected] || null;
       // 소리 없는 구간의 잡음·환각 응답은 버린다
       if (!text || !/[0-9A-Za-z\uAC00-\uD7A3\u3040-\u30FF\u4E00-\u9FFF]/.test(text)) { subPaintStatus(); return; }
-      subPushSentence(text, info ? info.tr : 'en', info ? info.name : detected);
+      if (!info) { subPushUnsupported(text, detected || 'unknown'); subPaintStatus(); return; }
+      subPushSentence(text, info.tr, info.name);
       subPaintStatus();
     }).catch(function (e) {
       SUB.pending = Math.max(0, SUB.pending - 1);
