@@ -7,7 +7,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<title>한·영 동시통역 — SAS Innovate 2027</title>
+<title>다국어 동시통역 — SAS Innovate 2027</title>
 <style>
   :root{
     --navy:#0b2545;
@@ -126,6 +126,28 @@
   .mini-toggle.on{background:#e6f0fb;border-color:#bcd4f0;color:var(--blue-d);}
   .mini-toggle.on .led{background:var(--blue);box-shadow:0 0 6px rgba(11,107,203,.6);}
   .mini-toggle:active{transform:scale(.97);}
+
+  /* ── 상대방 언어 선택 (1:1 대화) ───────────────────── */
+  .partner-bar{
+    flex:0 0 auto;display:flex;align-items:center;gap:7px;
+    padding:6px 12px;background:#fff;border-bottom:1px solid var(--border);
+    z-index:18;
+  }
+  .partner-bar > label{
+    flex:0 0 auto;font-size:10.5px;font-weight:800;color:var(--muted);
+    letter-spacing:-.1px;
+  }
+  .partner-sel{
+    flex:1 1 auto;min-width:0;height:34px;border-radius:10px;
+    border:1px solid #c9d7e6;background:#f6fafe;color:var(--text);
+    font-size:13px;font-weight:800;padding:0 8px;
+    letter-spacing:-.2px;
+  }
+  .partner-sel:focus{outline:none;border-color:#a9c8ee;background:#fff;}
+  .pb-tip{
+    flex:0 0 auto;font-size:9.5px;font-weight:700;color:#9aa7b8;
+    white-space:nowrap;letter-spacing:-.2px;
+  }
 
   /* ── 퀵문구 ───────────────────────────────────────── */
   .quick{
@@ -711,25 +733,23 @@
   .sub-hint .sh-go{flex:0 0 auto;font-size:9.5px;font-weight:800;color:#0b1220;background:#7fb2ea;border-radius:5px;padding:2px 6px;}
   .sub-hint:active{background:#122a42;}
 
+  /* 듣기 언어 — 390px에서도 가로 넘침·줄깨짐 없이 2줄 5칸 */
   .sub-langs{
-    flex:0 0 auto;display:flex;gap:5px;
-    padding:8px 10px;background:#0a1420;
+    flex:0 0 auto;display:grid;
+    grid-template-columns:repeat(5,minmax(0,1fr));
+    gap:4px;padding:7px 8px;background:#0a1420;
     border-bottom:1px solid #16273a;
-    overflow-x:auto;overflow-y:hidden;
-    -webkit-overflow-scrolling:touch;
-    scrollbar-width:none;
   }
-  .sub-langs::-webkit-scrollbar{display:none;}
   .lang-chip{
-    flex:0 0 auto;height:33px;padding:0 8px;border-radius:999px;
-    display:flex;align-items:center;gap:2px;
+    height:31px;padding:0 3px;border-radius:9px;
+    display:flex;align-items:center;justify-content:center;gap:2px;
     background:#132234;border:1px solid #22384f;
-    font-size:11.5px;font-weight:800;color:#a3b8cc;
-    white-space:nowrap;
+    font-size:10.5px;font-weight:800;color:#a3b8cc;
+    white-space:nowrap;min-width:0;overflow:hidden;
+    letter-spacing:-.3px;
   }
-  .lang-chip small{font-size:9px;font-weight:700;opacity:.7;}
+  .lang-chip .lc-flag{font-size:11px;line-height:1;flex:0 0 auto;}
   .lang-chip.on{background:#1d4ed8;border-color:#3b82f6;color:#fff;box-shadow:0 2px 8px rgba(29,78,216,.4);}
-  .lang-chip.on small{opacity:.9;}
   .lang-chip:active{transform:scale(.97);}
 
   .sub-stage{
@@ -853,7 +873,7 @@
     <div class="brand">
       <div class="brand-mark">通譯</div>
       <div class="brand-text">
-        <strong>한·영 동시통역</strong>
+        <strong>다국어 동시통역</strong>
         <span id="engineLabel">기본 엔진 · MyMemory</span>
       </div>
     </div>
@@ -879,12 +899,19 @@
     <button class="mini-toggle on" id="tgTTS" aria-pressed="true"><span class="led"></span>TTS</button>
   </div>
 
+  <!-- 상대방 언어 -->
+  <div class="partner-bar">
+    <label for="partnerSel">상대 언어</label>
+    <select class="partner-sel" id="partnerSel" aria-label="상대방 언어 선택"></select>
+    <span class="pb-tip">이 언어로 통역</span>
+  </div>
+
   <!-- 퀵문구 -->
   <div class="quick" id="quick">
     <div class="quick-head">
       <button class="qh-toggle" id="quickHead" aria-expanded="false">
         <span class="q-ico">⚡</span><span>현장 퀵문구</span>
-        <span class="qh-hint">탭하면 바로 영어로 말합니다</span>
+        <span class="qh-hint" id="quickHint">탭하면 바로 영어로 말합니다</span>
         <span class="chev">▼</span>
       </button>
       <button class="qh-edit" id="quickEditBtn" aria-label="퀵문구 편집">✎ 편집</button>
@@ -897,7 +924,7 @@
 
   <!-- 텍스트 입력 -->
   <div class="composer">
-    <button class="dir-btn" id="dirBtn" title="번역 방향 전환">한→영</button>
+    <button class="dir-btn" id="dirBtn" title="번역 방향">자동</button>
     <input id="textInput" type="text" inputmode="text" enterkeyhint="send" autocomplete="off" autocorrect="off" autocapitalize="sentences" spellcheck="false" placeholder="텍스트로 입력해도 바로 번역됩니다">
     <button class="send-btn" id="sendBtn" aria-label="번역해서 보내기">↑</button>
   </div>
@@ -909,7 +936,7 @@
       <span class="a-sub" id="subKo">탭 → 말하면 영어로</span>
     </button>
     <button class="act act-en" id="btnEn">
-      <span class="a-top"><span class="a-flag">🇺🇸</span><span class="a-label">영어로 듣기</span></span>
+      <span class="a-top"><span class="a-flag" id="partnerFlag">🇺🇸</span><span class="a-label" id="partnerLabel">영어로 듣기</span></span>
       <span class="a-sub" id="subEn">탭 → 상대 영어 인식</span>
     </button>
   </div>
@@ -932,11 +959,16 @@
     </div>
 
     <div class="sub-langs" id="subLangs" role="group" aria-label="듣기 언어">
-      <button class="lang-chip on" data-lang="en">영어<small>EN</small></button>
-      <button class="lang-chip" data-lang="ja">일본어<small>JA</small></button>
-      <button class="lang-chip" data-lang="zh">중국어<small>ZH</small></button>
-      <button class="lang-chip" data-lang="ko">한국어<small>KO</small></button>
-      <button class="lang-chip" data-lang="auto">🤖 자동 감지</button>
+      <button class="lang-chip on" data-lang="en" title="영어" aria-label="영어 인식"><span class="lc-flag">🇺🇸</span>영어</button>
+      <button class="lang-chip" data-lang="ja" title="일본어" aria-label="일본어 인식"><span class="lc-flag">🇯🇵</span>일본어</button>
+      <button class="lang-chip" data-lang="zh" title="중국어" aria-label="중국어 인식"><span class="lc-flag">🇨🇳</span>중국어</button>
+      <button class="lang-chip" data-lang="ko" title="한국어" aria-label="한국어 인식"><span class="lc-flag">🇰🇷</span>한국어</button>
+      <button class="lang-chip" data-lang="auto" title="자동 감지(Groq Whisper)" aria-label="자동 감지"><span class="lc-flag">🤖</span>자동</button>
+      <button class="lang-chip" data-lang="es" title="스페인어" aria-label="스페인어 인식"><span class="lc-flag">🇪🇸</span>스페인어</button>
+      <button class="lang-chip" data-lang="fr" title="프랑스어" aria-label="프랑스어 인식"><span class="lc-flag">🇫🇷</span>프랑스어</button>
+      <button class="lang-chip" data-lang="de" title="독일어" aria-label="독일어 인식"><span class="lc-flag">🇩🇪</span>독일어</button>
+      <button class="lang-chip" data-lang="vi" title="베트남어" aria-label="베트남어 인식"><span class="lc-flag">🇻🇳</span>베트남어</button>
+      <button class="lang-chip" data-lang="th" title="태국어" aria-label="태국어 인식"><span class="lc-flag">🇹🇭</span>태국어</button>
     </div>
 
     <div class="sub-hint" id="subHint" role="button" tabindex="0" aria-label="강연·스피커 수음 안내">
@@ -1070,7 +1102,7 @@
           <div class="sw on" id="swTTS" role="switch" aria-checked="true"></div>
         </div>
         <div class="switch-row">
-          <div class="sw-text"><b>상대방 말도 한국어로 읽기</b><span>영어 발화를 한국어 음성으로도 재생 (이어폰 권장)</span></div>
+          <div class="sw-text"><b>상대방 말도 한국어로 읽기</b><span>상대 언어 발화를 한국어 음성으로도 재생 (이어폰 권장)</span></div>
           <div class="sw" id="swKoTTS" role="switch" aria-checked="false"></div>
         </div>
         <div class="switch-row">
@@ -1091,7 +1123,7 @@
             <li>파일을 <b>HTTPS 주소</b>에 올려 열기 — 예: GitHub Pages에 <code>index.html</code>로 업로드 후 <code>https://아이디.github.io/저장소/</code> 접속</li>
             <li>또는 안드로이드 파일 관리자에서 <b>Chrome으로 열기</b> 후 주소창 자물쇠 → <b>마이크 허용</b></li>
           </ol>
-          <p style="margin-top:8px"><b>2. 마이크 없이 말하기</b> — 입력창을 탭한 뒤 <b>Gboard·삼성 키보드의 마이크 버튼</b>으로 한국어/영어를 받아쓰면, 텍스트 입력과 똑같이 번역·음성 출력됩니다.</p>
+          <p style="margin-top:8px"><b>2. 마이크 없이 말하기</b> — 입력창을 탭한 뒤 <b>Gboard·삼성 키보드의 마이크 버튼</b>으로 한국어 또는 상대 언어를 받아쓰면, 텍스트 입력과 똑같이 번역·음성 출력됩니다.</p>
           <p style="margin-top:8px"><b>3. 시끄러운 전시장</b> — 마이크 버튼 대신 <b>퀵문구</b>와 <b>텍스트 입력</b>이 가장 안정적입니다. 말풍선의 <b>확대 보기</b>로 화면을 상대에게 보여 주세요.</p>
           <p style="margin-top:8px"><b>4. 인터넷</b> — 번역은 온라인 API를 사용합니다. 와이파이가 끊기면 말풍선에 <b>재시도</b> 버튼이 나타나고, 퀵문구는 네트워크 없이도 그대로 표시·재생됩니다.</p>
         </div>
@@ -1118,11 +1150,12 @@
         <h3>3초 사용법</h3>
         <div class="note">
           <ol>
-            <li><span class="a-flag">🇰🇷</span> <b>한국어로 말하기</b> — 탭하고 한국어로 말하면 영어 번역 + 영어 음성</li>
-            <li><span class="a-flag">🇺🇸</span> <b>영어로 듣기</b> — 탭하고 상대에게 말을 걸면 영어 인식 + 한국어 번역</li>
+            <li><span class="a-flag">🇰🇷</span> <b>한국어로 말하기</b> — 탭하고 한국어로 말하면 상대 언어 번역 + 상대 언어 음성</li>
+            <li><span class="a-flag">🇺🇸</span> <b>상대 언어로 듣기</b> — 탭하고 상대에게 말을 걸면 상대 언어 인식 + 한국어 번역</li>
+            <li><b>상대 언어</b>를 먼저 고르세요 — 영어·일본어·중국어·스페인어·프랑스어·독일어·베트남어·태국어 (기본 영어)</li>
             <li>말풍선 <b>🔊</b> 다시 듣기 · <b>확대</b> 로 상대에게 화면 보여주기</li>
             <li><b>연속 대화</b>를 켜면 내 말 → 상대 말 → 내 말 순서로 자동 전환됩니다</li>
-            <li><b>⚡ 현장 퀵문구</b>는 <b>✎ 편집</b>에서 문구·순서를 바꾸고 새로 추가할 수 있습니다(한국어만 적고 <b>자동 영작</b> 가능)</li>
+            <li><b>⚡ 현장 퀵문구</b>는 <b>✎ 편집</b>에서 문구·순서를 바꾸고 새로 추가할 수 있습니다. 영어가 아닌 상대 언어를 고르면 퀵문구도 그 언어로 번역해 보여 줍니다.</li>
           </ol>
         </div>
       </div>
@@ -1131,9 +1164,10 @@
         <div class="note">
           <ol>
             <li>상단 <b>🎬 실시간 자막</b> 탭을 누르면 자막 화면으로 바뀝니다(다시 누르면 1:1 대화로).</li>
-            <li>듣기 언어를 고르고(기본 <b>영어 EN</b>) <b>▶ 자막 시작</b>을 누르면 들리는 말이 한 문장씩 번역되어 아래로 쌓입니다.</li>
+            <li>듣기 언어를 고르고(기본 <b>영어</b>) <b>▶ 자막 시작</b>을 누르면 들리는 말이 한 문장씩 번역되어 아래로 쌓입니다.</li>
+            <li>듣기 언어는 <b>영어·일본어·중국어·한국어·스페인어·프랑스어·독일어·베트남어·태국어</b> 9개와 <b>🤖 자동</b>이 있습니다. 한국어를 고르면 영어로 번역합니다.</li>
             <li>아직 들리는 중인 말은 화면 아래 <b>인식 중</b> 줄에 미리 보이고, 문장이 확정되면 설정한 번역 엔진(기본·Groq·Gemini·OpenAI)으로 바로 번역됩니다.</li>
-            <li><b>자동 감지</b>는 Groq Whisper로 4초씩 녹음해 언어를 판별합니다(Groq 키 필요). 키가 없으면 영어·일본어·중국어·한국어 중에서 고르세요.</li>
+            <li><b>자동</b>은 Groq Whisper로 4초씩 녹음해 언어를 판별합니다(Groq 키 필요). 키가 없으면 위에서 언어를 직접 고르세요.</li>
             <li><b>가 보통/크게/특대</b>로 글자를 키우고, <b>전체 복사</b>로 자막을 메모에 붙여 넣을 수 있습니다.</li>
           </ol>
         </div>
@@ -1174,7 +1208,7 @@
       <button class="x" data-close="quickEditModal" aria-label="닫기">✕</button>
     </div>
     <div class="sheet-body">
-      <p class="hint" style="margin:0 0 12px">탭하면 바로 영어로 표시·재생되는 문구입니다. <b>↑↓</b>로 순서를 바꾸고, 이 기기에 자동 저장됩니다.</p>
+      <p class="hint" style="margin:0 0 12px">탭하면 바로 상대 언어로 표시·재생되는 문구입니다. <b>↑↓</b>로 순서를 바꾸고, 이 기기에 자동 저장됩니다.</p>
       <div id="qpList"></div>
 
       <button class="btn-line" id="qpAddToggle" style="margin-top:2px">+ 새 퀵문구 추가</button>
@@ -1189,6 +1223,7 @@
             <button class="qp-auto" type="button" id="qpNewAuto">✨ 자동 영작</button>
           </div>
           <textarea id="qpNewEn" maxlength="300" placeholder="Could you speak a little more slowly, please?" spellcheck="false"></textarea>
+          <p class="hint" style="margin-top:5px">상대 언어가 영어가 아니면, 이 문장(한국어 뜻이 있으면 그 뜻)을 그 언어로 번역해 보여 줍니다.</p>
         </div>
         <div class="field">
           <label for="qpNewKo">③ 한국어 뜻 (선택 · 자동 영작에 사용)</label>
@@ -1241,6 +1276,36 @@
     'openai/gpt-oss-120b', 'openai/gpt-oss-20b', 'qwen/qwen3.8-27b'
   ];
 
+  /* ───────── 공통 언어 테이블 (1:1 대화 · 실시간 자막이 같이 쓴다) ─────────
+     key  : 앱 내부 키 — 예전 저장값(en/ja/zh/ko/auto)과 호환
+     code : 음성인식(SpeechRecognition.lang) · TTS(SpeechSynthesisUtterance.lang) BCP-47
+     mm   : MyMemory langpair 코드 — 중국어는 API 규격상 zh-CN
+     tr   : 번역 엔진에 넘기는 언어 키(=key)  */
+  var LANGS = {
+    en: { key: 'en', name: '영어',     flag: '🇺🇸', short: 'EN', code: 'en-US', mm: 'en' },
+    ja: { key: 'ja', name: '일본어',   flag: '🇯🇵', short: 'JA', code: 'ja-JP', mm: 'ja' },
+    zh: { key: 'zh', name: '중국어',   flag: '🇨🇳', short: 'ZH', code: 'zh-CN', mm: 'zh-CN' },
+    es: { key: 'es', name: '스페인어', flag: '🇪🇸', short: 'ES', code: 'es-ES', mm: 'es' },
+    fr: { key: 'fr', name: '프랑스어', flag: '🇫🇷', short: 'FR', code: 'fr-FR', mm: 'fr' },
+    de: { key: 'de', name: '독일어',   flag: '🇩🇪', short: 'DE', code: 'de-DE', mm: 'de' },
+    vi: { key: 'vi', name: '베트남어', flag: '🇻🇳', short: 'VI', code: 'vi-VN', mm: 'vi' },
+    th: { key: 'th', name: '태국어',   flag: '🇹🇭', short: 'TH', code: 'th-TH', mm: 'th' },
+    ko: { key: 'ko', name: '한국어',   flag: '🇰🇷', short: 'KO', code: 'ko-KR', mm: 'ko' }
+  };
+  var LANG_ORDER = ['en', 'ja', 'zh', 'es', 'fr', 'de', 'vi', 'th', 'ko'];
+  var PARTNER_ORDER = ['en', 'ja', 'zh', 'es', 'fr', 'de', 'vi', 'th'];   // 내 말(한국어)은 제외
+  var LANG_EN = {
+    en: 'English', ja: 'Japanese', zh: 'Simplified Chinese', es: 'Spanish',
+    fr: 'French', de: 'German', vi: 'Vietnamese', th: 'Thai', ko: 'Korean'
+  };
+
+  function isLang(k) { return !!LANGS[k]; }
+  function langOf(k) { return LANGS[k] || LANGS.en; }
+  function langName(k) { return langOf(k).name; }
+  function langFlag(k) { return langOf(k).flag; }
+  function bcp(k) { return langOf(k).code; }
+  function mmCode(k) { return langOf(k).mm; }
+
   var DEFAULTS = {
     engine: 'basic',
     openaiKey: '', openaiModel: 'gpt-4o-mini',
@@ -1252,8 +1317,10 @@
     keepAwake: true,
     autoTurn: false,
     quickOpen: false,
+    // ── 1:1 대화 모드 ──
+    partnerLang: 'en',    // 상대방 언어(en | ja | zh | es | fr | de | vi | th) — 저장·기본 영어
     // 실시간 자막 모드
-    subLang: 'en',        // en | ja | zh | ko | auto
+    subLang: 'en',        // en | ja | zh | es | fr | de | vi | th | ko | auto
     subSize: 'normal',    // normal | large | xlarge
     subTTS: false         // 자막 번역문 자동 재생(이어폰 TTS) — 사용자가 직접 켜야 한다
   };
@@ -1286,6 +1353,16 @@
       settings.engine = 'basic';
       saveSettings();
     }
+    // 상대 언어: 지원하지 않는 값이거나 한국어면 영어로 되돌린다(상대 언어는 한국어가 될 수 없다)
+    if (!LANGS[settings.partnerLang] || settings.partnerLang === 'ko') {
+      settings.partnerLang = 'en';
+      saveSettings();
+    }
+    // 자막 듣기 언어: 지원하지 않는 값이면 영어로
+    if (settings.subLang !== 'auto' && !LANGS[settings.subLang]) {
+      settings.subLang = 'en';
+      saveSettings();
+    }
   }
   function saveSettings() { lsSet(STORE_KEY, JSON.stringify(settings)); }
 
@@ -1299,6 +1376,55 @@
     seq: 0,
     view: 'chat'          // 'chat' | 'sub'
   };
+
+  /* ───────── 상대방 언어 (1:1 대화) ───────── */
+  function partnerKey() {
+    var k = settings.partnerLang;
+    return (isLang(k) && k !== 'ko') ? k : 'en';
+  }
+
+  function fillPartnerSelect() {
+    var sel = $('partnerSel');
+    if (!sel) return;
+    sel.innerHTML = PARTNER_ORDER.map(function (k) {
+      var L = LANGS[k];
+      return '<option value="' + k + '">' + L.flag + ' ' + L.name + ' (' + L.short + ')</option>';
+    }).join('');
+    sel.value = partnerKey();
+  }
+
+  // 상대 언어에 따라 버튼·퀵문구 안내·입력창 문구를 한번에 맞춘다
+  function paintPartner() {
+    var k = partnerKey(), L = LANGS[k];
+    if ($('partnerSel')) $('partnerSel').value = k;
+    if ($('partnerFlag')) $('partnerFlag').textContent = L.flag;
+    if ($('partnerLabel')) $('partnerLabel').textContent = L.name + '로 듣기';
+    if ($('quickHint')) $('quickHint').textContent = '탭하면 바로 ' + L.name + '로 말합니다';
+    paintMic();
+    paintDir();
+    if (!state.messages.length) renderAll();
+  }
+
+  function setPartner(k, quiet) {
+    if (!isLang(k) || k === 'ko') k = 'en';
+    if (k === partnerKey()) { paintPartner(); return; }
+    settings.partnerLang = k;
+    saveSettings();
+    stopListening();
+    stopSpeaking();
+    pendingNextLang = null;
+    setStatus('idle');
+    paintPartner();
+    if (quiet) return;
+    var L = LANGS[k];
+    toast('상대 언어 · ' + L.name + ' — 버튼·번역·음성이 ' + L.name + '로 바뀝니다.', 2600);
+    loadVoices();
+    if (!hasVoiceFor(k)) {
+      setTimeout(function () {
+        toast('이 기기에 ' + L.name + ' 음성이 없습니다. 번역은 정상 동작하고, 음성까지 들으려면 휴대폰 설정 → TTS(음성 합성)에서 ' + L.name + ' 음성을 설치하세요.', 6200);
+      }, 2800);
+    }
+  }
 
   /* ───────── 토스트 / 상태 표시 ───────── */
   var toastTimer = null;
@@ -1480,27 +1606,36 @@
   }
 
   function translateBasic(text, from, to) {
-    var src = (from === 'ko') ? preKo(text) : preEn(text);
+    var src = (from === 'ko') ? preKo(text) : (from === 'en' ? preEn(text) : text);
     var chunks = splitForMyMemory(src);
     var out = [];
     return chunks.reduce(function (p, chunk) {
       return p.then(function () {
-        return myMemoryOnce(chunk, from, to).catch(function (err) {
+        return myMemoryOnce(chunk, mmCode(from), mmCode(to)).catch(function (err) {
           // 1회 재시도 (일시적 지연 대비)
           if (err.message === 'QUOTA' || err.message === 'CONFIG') throw err;
           return new Promise(function (r) { setTimeout(r, 700); })
-            .then(function () { return myMemoryOnce(chunk, from, to); });
+            .then(function () { return myMemoryOnce(chunk, mmCode(from), mmCode(to)); });
         }).then(function (t) { out.push(t); });
       });
     }, Promise.resolve()).then(function () {
       var joined = stripMT(out.join(' '));
       if (to === 'en') joined = fixEnCase(cleanOut(joined));
-      else joined = postKo(cleanOut(joined));
-      // 번역기가 원문을 그대로 돌려준 경우(사실상 미번역) 구분
-      if (to === 'ko' && !/[\uAC00-\uD7A3]/.test(joined) && text.length > 12) throw new Error('UNTRANSLATED');
-      if (to === 'en' && !/[A-Za-z]/.test(joined) && text.length > 12) throw new Error('UNTRANSLATED');
+      else if (to === 'ko') joined = postKo(cleanOut(joined));
+      else joined = cleanOut(joined);
+      // 번역기가 원문을 그대로 돌려준 경우(사실상 미번역) 구분 — 언어별 문자(스크립트)로 확인
+      if (!hasTargetScript(to, joined) && text.length > 12) throw new Error('UNTRANSLATED');
       return joined;
     });
+  }
+
+  // 목표 언어의 문자(스크립트)가 번역문에 있는지 — 일본어·중국어·태국어·한국어·라틴 계열
+  function hasTargetScript(key, s) {
+    if (key === 'ko') return /[\uAC00-\uD7A3]/.test(s);
+    if (key === 'ja') return /[\u3040-\u30FF\u4E00-\u9FFF]/.test(s);
+    if (key === 'zh') return /[\u4E00-\u9FFF]/.test(s);
+    if (key === 'th') return /[\u0E00-\u0E7F]/.test(s);
+    return /[A-Za-z]/.test(s);            /* en · es · fr · de · vi */
   }
 
   /* ───────── 번역: AI(OpenAI / Gemini) ───────── */
@@ -1522,21 +1657,50 @@
     'official statistics=국가승인통계. Keep SAS Viya, Gemma, SQL, API as is. ' +
     'Output ONLY the Korean translation, with no quotation marks and no commentary.';
 
-  /* 영어·한국어 외(일본어·중국어 등) 발화용 범용 통역 프롬프트 — 실시간 자막 모드에서 쓴다 */
-  var SYS_ANY_KO =
-    'You are a professional simultaneous interpreter. The following speech may be in English, Japanese or Chinese. ' +
-    'Translate it into natural, concise spoken Korean (해요체) for someone reading live lecture subtitles. ' +
-    'Keep names, numbers and technical terms accurate, and do not summarize or skip anything. ' +
-    'Output ONLY the Korean translation, with no quotation marks and no commentary.';
-  var SYS_ANY_EN =
-    'You are a professional simultaneous interpreter. The following speech may be in Korean, Japanese or Chinese. ' +
-    'Translate it into natural, concise spoken American English for live lecture subtitles. ' +
-    'Keep names, numbers and technical terms accurate, and do not summarize or skip anything. ' +
-    'Output ONLY the English translation, with no quotation marks and no commentary.';
+  /* 한국어·영어 외 언어(일본어·중국어·스페인어·베트남어 등) 발화용 범용 통역 프롬프트 */
+  var GLOSSARY =
+    '국가데이터처=Ministry of Data and Statistics, 통계데이터센터=Statistics Data Center (SDC), 폐쇄망=air-gapped environment, ' +
+    '비식별화=de-identification, 가명처리=pseudonymization, 소분류 셀(3명 미만)=small cell with N less than 3, 에이전틱 AI=agentic AI, ' +
+    '마이크로데이터=microdata, 기업통계등록부=Statistical Business Register (SBR), 국가승인통계=official national statistics. ' +
+    'Keep product names as written: SAS Viya, Gemma.';
+
+  function sysAnyKo(from) {
+    var f = LANG_EN[from] || 'the source language';
+    return 'You are a professional simultaneous interpreter. The following speech is in ' + f + '. ' +
+      'Translate it into natural, concise spoken Korean (해요체) for a Korean government official (Ministry of Data and Statistics, SDC) reading live subtitles. ' +
+      'Keep names, numbers and technical terms accurate, and do not summarize or skip anything. Terminology: ' + GLOSSARY + ' ' +
+      'Output ONLY the Korean translation, with no quotation marks and no commentary.';
+  }
+  function sysAnyEn(from) {
+    var f = LANG_EN[from] || 'the source language';
+    return 'You are a professional simultaneous interpreter. The following speech is in ' + f + '. ' +
+      'Translate it into natural, concise spoken American English for live subtitles. ' +
+      'Keep names, numbers and technical terms accurate, and do not summarize or skip anything. ' +
+      'Output ONLY the English translation, with no quotation marks and no commentary.';
+  }
+  function sysKoTo(to) {
+    var t = LANG_EN[to] || 'the target language';
+    return 'You are a professional simultaneous interpreter for a Korean government official at an international conference. ' +
+      'Translate the user\'s Korean into natural, concise spoken ' + t + ' that the official can say out loud to a listener. ' +
+      'Use first person as the speaker, keep it short and conversational, never add explanations or notes. Terminology: ' + GLOSSARY + ' ' +
+      'Output ONLY the ' + t + ' translation, with no quotation marks and no commentary.';
+  }
+  function sysAnyAny(from, to) {
+    var f = LANG_EN[from] || 'the source language';
+    var t = LANG_EN[to] || 'the target language';
+    return 'You are a professional simultaneous interpreter. Translate the user\'s ' + f + ' into natural, concise spoken ' + t +
+      ' for a Korean government official at an international conference. ' +
+      'Keep names, numbers and technical terms accurate, and do not summarize or skip anything. ' +
+      'Output ONLY the ' + t + ' translation, with no quotation marks and no commentary.';
+  }
 
   function sysPrompt(from, to) {
-    if (to === 'en') return from === 'ko' ? SYS_KO_EN : SYS_ANY_EN;
-    return from === 'en' ? SYS_EN_KO : SYS_ANY_KO;
+    if (from === 'ko' && to === 'en') return SYS_KO_EN;
+    if (from === 'en' && to === 'ko') return SYS_EN_KO;
+    if (to === 'ko') return sysAnyKo(from);
+    if (from === 'ko') return sysKoTo(to);
+    if (to === 'en') return sysAnyEn(from);
+    return sysAnyAny(from, to);
   }
 
   function translateOpenAI(text, from, to) {
@@ -1782,12 +1946,35 @@
       speechSynthesis.onvoiceschanged = loadVoices;
     }
   }
+  /* 기기 음성 목록에서 언어별로 선호하는 목소리 이름 */
+  var VOICE_PREF = {
+    ko: ['google 한국의', 'google korean', 'samsung', 'yuna', 'kyuri'],
+    en: ['google us english', 'google uk english female', 'samantha', 'aria', 'jenny', 'microsoft'],
+    ja: ['google 日本語', 'google japanese', 'kyoko', 'o-ren', 'nanami', 'haruka'],
+    zh: ['google 普通话', 'google 國語', 'google chinese', 'tingting', 'xiaoxiao', 'huihui'],
+    es: ['google español', 'google spanish', 'monica', 'paulina', 'helena', 'sabina'],
+    fr: ['google français', 'google french', 'amelie', 'amélie', 'audrey', 'thomas'],
+    de: ['google deutsch', 'google german', 'anna', 'katja', 'stefan', 'marlene'],
+    vi: ['google tiếng việt', 'google vietnamese', 'linh', 'mai'],
+    th: ['google ภาษาไทย', 'google thai', 'kanya', 'premwadee', 'achara']
+  };
+
+  // 이 기기에 해당 언어 음성(엔진)이 설치돼 있는지
+  function hasVoiceFor(key) {
+    var code = bcp(key).toLowerCase(), want = code.split('-')[0];
+    return voices.some(function (v) {
+      var l = String(v.lang || '').toLowerCase();
+      return l === code || l.indexOf(want + '-') === 0 || l === want;
+    });
+  }
+
   function pickVoice(lang) {
-    var want = lang === 'ko' ? 'ko' : 'en';
-    var pref = lang === 'ko'
-      ? ['google 한국의', 'google korean', 'samsung', 'yuna', 'kyuri']
-      : ['google us english', 'google uk english female', 'samantha', 'aria', 'jenny', 'microsoft'];
-    var cands = voices.filter(function (v) { return (v.lang || '').toLowerCase().indexOf(want) === 0; });
+    var code = bcp(lang).toLowerCase(), want = code.split('-')[0];
+    var pref = VOICE_PREF[lang] || [];
+    var cands = voices.filter(function (v) {
+      var l = String(v.lang || '').toLowerCase();
+      return l === code || l.indexOf(want + '-') === 0 || l === want;
+    });
     if (!cands.length) return null;
     for (var i = 0; i < pref.length; i++) {
       for (var j = 0; j < cands.length; j++) {
@@ -1816,6 +2003,8 @@
     try { return !!(window.speechSynthesis && speechSynthesis.speaking); } catch (e) { return false; }
   }
 
+  var CHAT_TTS_LOG = [];   // 최근 대화 모드 재생 기록(확인·테스트용)
+
   function speak(text, lang) {
     return new Promise(function (resolve) {
       if (!text || !window.speechSynthesis) { resolve(false); return; }
@@ -1834,12 +2023,14 @@
         var piece = chunks[i++];
         var u;
         try { u = new SpeechSynthesisUtterance(piece); } catch (e) { finish(); return; }
-        u.lang = lang === 'ko' ? 'ko-KR' : 'en-US';
+        u.lang = bcp(lang);
         var v = pickVoice(lang);
         if (v) u.voice = v;
         u.rate = Number(settings.ttsRate) || 1;
         u.pitch = 1;
         u.volume = 1;
+        CHAT_TTS_LOG.push({ text: piece, lang: u.lang, voice: (u.voice && u.voice.name) || '', at: Date.now() });
+        if (CHAT_TTS_LOG.length > 20) CHAT_TTS_LOG.shift();
         var guard = setTimeout(function () { next(); }, Math.max(4000, piece.length * 130));
         u.onend = function () { clearTimeout(guard); next(); };
         u.onerror = function () { clearTimeout(guard); next(); };
@@ -1879,11 +2070,11 @@
   }
 
   function paintMic() {
-    var ko = $('btnKo'), en = $('btnEn');
-    ko.classList.toggle('rec', state.listening === 'ko');
-    en.classList.toggle('rec', state.listening === 'en');
-    $('subKo').textContent = state.listening === 'ko' ? '듣는 중… 탭하여 끝내기' : '탭 → 말하면 영어로';
-    $('subEn').textContent = state.listening === 'en' ? '듣는 중… 탭하여 끝내기' : '탭 → 상대 영어 인식';
+    var pk = partnerKey(), P = LANGS[pk];
+    $('btnKo').classList.toggle('rec', state.listening === 'ko');
+    $('btnEn').classList.toggle('rec', state.listening === pk);
+    $('subKo').textContent = state.listening === 'ko' ? '듣는 중… 탭하여 끝내기' : '탭 → 말하면 ' + P.name + '로';
+    $('subEn').textContent = state.listening === pk ? '듣는 중… 탭하여 끝내기' : '탭 → 상대 ' + P.name + ' 인식';
   }
 
   function startListening(lang) {
@@ -1891,15 +2082,17 @@
       toast('이 브라우저는 음성 인식을 지원하지 않습니다. 텍스트 입력을 사용하세요.');
       return;
     }
-    if (state.listening === lang) { stopListening(); setStatus('idle'); return; }
+    var key = isLang(lang) ? lang : partnerKey();
+    if (state.listening === key) { stopListening(); setStatus('idle'); return; }
     stopListening();
     stopSpeaking();
-    state.listening = lang;
+    state.listening = key;
     paintMic();
 
     var r = new SR();
     recog = r;
-    r.lang = lang === 'ko' ? 'ko-KR' : 'en-US';
+    r.lang = bcp(key);
+    state.srLang = r.lang;       // 마지막으로 요청한 인식 언어(확인용)
     r.continuous = false;
     r.interimResults = true;
     r.maxAlternatives = 1;
@@ -1908,7 +2101,7 @@
     var gotAny = false;
 
     r.onstart = function () {
-      setStatus(lang === 'ko' ? 'listening_ko' : 'listening_en');
+      setStatus(key === 'ko' ? 'listening_ko' : 'listening_en', '듣는 중 · ' + langName(key));
     };
     r.onresult = function (ev) {
       var interim = '';
@@ -1919,7 +2112,7 @@
       }
       gotAny = gotAny || !!finalText || !!interim;
       var live = (finalText + ' ' + interim).trim();
-      if (live) setStatus(lang === 'ko' ? 'listening_ko' : 'listening_en', '듣는 중 · ' + live.slice(-26));
+      if (live) setStatus(key === 'ko' ? 'listening_ko' : 'listening_en', '듣는 중 · ' + live.slice(-26));
     };
     r.onerror = function (ev) {
       var code = ev && ev.error;
@@ -1948,6 +2141,11 @@
         toast('마이크를 찾을 수 없습니다. 다른 앱이 마이크를 쓰고 있는지 확인하세요.', 4200);
         return;
       }
+      if (code === 'language-not-supported') {
+        setStatus('error');
+        toast('이 기기의 음성 인식이 ' + langName(key) + '를 지원하지 않습니다. 텍스트 입력을 쓰시거나, 자막 모드의 🤖 자동 감지(Groq Whisper)를 쓰세요.', 6000);
+        return;
+      }
       setStatus('error');
       toast('음성 인식 오류: ' + (code || 'unknown'), 3600);
     };
@@ -1958,7 +2156,7 @@
       paintMic();
       var t = cleanOut(finalText);
       if (t) {
-        handleUtterance(t, lang === 'ko' ? 'out' : 'in', 'speech');
+        handleUtterance(t, key === 'ko' ? 'out' : 'in', 'speech', key);
       } else if (!gotAny) {
         setStatus('idle');
       } else {
@@ -1979,11 +2177,14 @@
   var tl = $('timeline');
 
   function addMessage(opt) {
+    var pk = partnerKey();
     var m = {
       id: ++state.seq,
-      dir: opt.dir,                    // 'out'(내가 한국어) | 'in'(상대가 영어)
+      dir: opt.dir,                    // 'out'(내가 한국어) | 'in'(상대 언어)
       src: opt.src,                    // 원문
       dst: opt.dst || '',              // 번역문
+      from: opt.from || (opt.dir === 'out' ? 'ko' : pk),   // 원문 언어
+      to: opt.to || (opt.dir === 'out' ? pk : 'ko'),       // 번역 언어
       pending: !!opt.pending,
       error: '',
       kind: opt.kind || 'text',        // speech | text | quick
@@ -2021,20 +2222,23 @@
   }
 
   function emptyHTML() {
+    var P = LANGS[partnerKey()];
     return '<div class="empty">' +
       '<div class="e-ico">🎙️</div>' +
       '<h3>아래 버튼을 눌러 대화를 시작하세요</h3>' +
       '<ul>' +
-      '<li><span class="a-flag">🇰🇷</span> <b>한국어로 말하기</b> → 영어 번역 + 영어 음성</li>' +
-      '<li><span class="a-flag">🇺🇸</span> <b>영어로 듣기</b> → 영어 인식 + 한국어 번역</li>' +
-      '<li><b>⚡ 퀵문구</b> → 한 번 탭으로 바로 영어 표시</li>' +
+      '<li><span class="a-flag">🇰🇷</span> <b>한국어로 말하기</b> → ' + P.name + ' 번역 + ' + P.name + ' 음성</li>' +
+      '<li><span class="a-flag">' + P.flag + '</span> <b>' + P.name + '로 듣기</b> → ' + P.name + ' 인식 + 한국어 번역</li>' +
+      '<li><b>⚡ 퀵문구</b> → 한 번 탭으로 바로 ' + P.name + ' 표시</li>' +
       '</ul></div>';
   }
 
   function bubbleHTML(m) {
-    var srcLabel = m.dir === 'out' ? '한국어' : 'English';
-    var dstLabel = m.dir === 'out' ? 'English' : '한국어';
-    var dstCls = m.dir === 'out' ? '' : ' ko';
+    var fromKey = m.from || (m.dir === 'out' ? 'ko' : partnerKey());
+    var toKey = m.to || (m.dir === 'out' ? partnerKey() : 'ko');
+    var srcLabel = langName(fromKey);
+    var dstLabel = langName(toKey);
+    var dstCls = toKey === 'ko' ? ' ko' : '';
     var body;
 
     if (m.pending) {
@@ -2089,7 +2293,7 @@
       if (m && m.dst) {
         stopListening();
         setStatus('speaking');
-        speak(m.dst, m.dir === 'out' ? 'en' : 'ko');
+        speak(m.dst, m.to || (m.dir === 'out' ? 'en' : 'ko'));
       }
     } else if (b.hasAttribute('data-huge')) {
       openHuge(Number(b.getAttribute('data-huge')));
@@ -2100,11 +2304,12 @@
   });
 
   /* ───────── 발화 처리 파이프라인 ───────── */
-  function handleUtterance(text, dir, kind) {
+  function handleUtterance(text, dir, kind, srcKey) {
     if (state.busy) { toast('이전 문장을 번역하는 중입니다. 잠시만요.'); return; }
-    var from = dir === 'out' ? 'ko' : 'en';
-    var to = dir === 'out' ? 'en' : 'ko';
-    var m = addMessage({ dir: dir, src: text, pending: true, kind: kind });
+    var pk = partnerKey();
+    var from = (srcKey && isLang(srcKey)) ? srcKey : (dir === 'out' ? 'ko' : pk);
+    var to = from === 'ko' ? pk : 'ko';
+    var m = addMessage({ dir: dir, src: text, pending: true, kind: kind, from: from, to: to });
 
     state.busy = true;
     setStatus('thinking');
@@ -2113,14 +2318,13 @@
       state.busy = false;
       updateMessage(m.id, { pending: false, dst: out, error: '' });
       setStatus('idle');
-      var playLang = dir === 'out' ? 'en' : 'ko';
-      var shouldPlay = settings.ttsAuto && (dir === 'out' || settings.koTTSForIncoming);
+      var shouldPlay = settings.ttsAuto && (to !== 'ko' || settings.koTTSForIncoming);
       if (shouldPlay) {
-        if (settings.autoTurn) pendingNextLang = dir === 'out' ? 'en' : 'ko';
+        if (settings.autoTurn) pendingNextLang = dir === 'out' ? to : 'ko';
         setStatus('speaking');
-        speak(out, playLang);
+        speak(out, to);
       } else if (settings.autoTurn) {
-        var next = dir === 'out' ? 'en' : 'ko';
+        var next = dir === 'out' ? to : 'ko';
         setTimeout(function () {
           if (settings.autoTurn && !state.busy && !state.listening) startListening(next);
         }, 400);
@@ -2142,14 +2346,14 @@
     state.busy = true;
     setStatus('thinking');
     updateMessage(id, { pending: true, error: '' });
-    var from = m.dir === 'out' ? 'ko' : 'en';
-    var to = m.dir === 'out' ? 'en' : 'ko';
+    var from = m.from || (m.dir === 'out' ? 'ko' : partnerKey());
+    var to = m.to || (from === 'ko' ? partnerKey() : 'ko');
     translate(m.src, from, to).then(function (out) {
       state.busy = false;
       updateMessage(id, { pending: false, dst: out, error: '' });
       setStatus('idle');
-      var shouldPlay = settings.ttsAuto && (m.dir === 'out' || settings.koTTSForIncoming);
-      if (shouldPlay) { setStatus('speaking'); speak(out, m.dir === 'out' ? 'en' : 'ko'); }
+      var shouldPlay = settings.ttsAuto && (to !== 'ko' || settings.koTTSForIncoming);
+      if (shouldPlay) { setStatus('speaking'); speak(out, to); }
     }).catch(function (e) {
       state.busy = false;
       updateMessage(id, { pending: false, error: friendlyError(e) });
@@ -2165,12 +2369,12 @@
     $('hugeOrig').textContent = m.src;
     var main = $('hugeMain');
     main.textContent = m.dst;
-    main.className = 'huge-main' + (m.dir === 'out' ? '' : ' ko');
+    main.className = 'huge-main' + (m.to === 'ko' ? ' ko' : '');
     applyHugeSize();
     $('hugeSpeak').onclick = function () {
       stopListening();
       setStatus('speaking');
-      speak(m.dst, m.dir === 'out' ? 'en' : 'ko');
+      speak(m.dst, m.to || (m.dir === 'out' ? 'en' : 'ko'));
     };
     $('huge').classList.add('open');
   }
@@ -2190,14 +2394,14 @@
   /* ───────── 퀵문구 (추가·수정·삭제·순서·저장) ───────── */
   var QUICK_KEY = 'kim_sdc_quick_phrases_v1';
   var DEFAULT_QUICK = [
-    { ko: '자기소개', en: "Hello, I'm Gijun Yoon from the Ministry of Data and Statistics in Korea.", mean: '' },
-    { ko: '양해 구하기', en: "Excuse me, I'm using a live translation app so we can talk smoothly.", mean: '' },
-    { ko: 'SDC 소개', en: "We operate an on-premise agentic AI connecting Gemma 4 and SAS Viya in an air-gapped environment.", mean: '' },
-    { ko: '보안 설명', en: "Our system automatically masks small cells where N is less than 3 to protect statistical confidentiality.", mean: '' },
-    { ko: '천천히 부탁', en: "Could you speak a little more slowly, please?", mean: '' },
-    { ko: '세션 문의', en: "How did you handle metadata integration in SAS Viya?", mean: '' },
-    { ko: '명함·LinkedIn', en: "May I exchange business cards or LinkedIn with you?", mean: '' },
-    { ko: '감사 인사', en: "Thank you for your time. It was great talking with you.", mean: '' }
+    { ko: '자기소개', en: "Hello, I'm Gijun Yoon from the Ministry of Data and Statistics in Korea.", mean: '안녕하세요, 저는 한국 국가데이터처의 윤기준입니다.' },
+    { ko: '양해 구하기', en: "Excuse me, I'm using a live translation app so we can talk smoothly.", mean: '죄송합니다. 원활한 대화를 위해 실시간 통역 앱을 사용하고 있습니다.' },
+    { ko: 'SDC 소개', en: "We operate an on-premise agentic AI connecting Gemma 4 and SAS Viya in an air-gapped environment.", mean: '우리는 폐쇄망 환경에서 Gemma 4와 SAS Viya를 연동한 온프레미스 에이전틱 AI를 운영하고 있습니다.' },
+    { ko: '보안 설명', en: "Our system automatically masks small cells where N is less than 3 to protect statistical confidentiality.", mean: '우리 시스템은 통계적 비밀유지를 위해 3명 미만의 소분류 셀을 자동으로 마스킹합니다.' },
+    { ko: '천천히 부탁', en: "Could you speak a little more slowly, please?", mean: '조금 천천히 말씀해 주시겠어요?' },
+    { ko: '세션 문의', en: "How did you handle metadata integration in SAS Viya?", mean: 'SAS Viya에서 메타데이터 통합은 어떻게 처리하셨나요?' },
+    { ko: '명함·LinkedIn', en: "May I exchange business cards or LinkedIn with you?", mean: '명함이나 링크드인을 교환해도 될까요?' },
+    { ko: '감사 인사', en: "Thank you for your time. It was great talking with you.", mean: '시간 내 주셔서 감사합니다. 이야기 나눠서 좋았습니다.' }
   ];
 
   function cloneDefaultQuick() {
@@ -2262,15 +2466,48 @@
     var idx = Number(b.getAttribute('data-q'));
     var q = QUICK[idx];
     if (!q) return;
-    addMessage({ dir: 'out', src: q.ko, dst: q.en, kind: 'quick', pending: false });
-    stopListening();
-    if (settings.ttsAuto !== false) { setStatus('speaking'); speak(q.en, 'en'); }
-    else setStatus('idle');
-    if (!state.quickHinted) {
-      state.quickHinted = true;
-      toast('영어 문장을 표시했습니다. 화면을 상대에게 보여 주거나 🔊 확대 보기를 쓰세요.', 2600);
-    }
+    quickSay(q);
   });
+
+  /* 현장 퀵문구 실행
+     · 상대 언어가 영어: 저장된 영문 문장을 그대로 바로 표시·재생
+     · 그 밖의 언어: 현재 번역 엔진으로 (한국어 뜻 → 영문 문장)을 상대 언어로 바로 번역해 표시·재생 */
+  function quickSay(q) {
+    var pk = partnerKey();
+    stopListening();
+    if (pk === 'en') {
+      addMessage({ dir: 'out', src: q.ko, dst: q.en, kind: 'quick', pending: false, from: 'ko', to: 'en' });
+      if (settings.ttsAuto !== false) { setStatus('speaking'); speak(q.en, 'en'); }
+      else setStatus('idle');
+      if (!state.quickHinted) {
+        state.quickHinted = true;
+        toast('영어 문장을 표시했습니다. 화면을 상대에게 보여 주거나 🔊 확대 보기를 쓰세요.', 2600);
+      }
+      return;
+    }
+    if (state.busy) { toast('이전 문장을 번역하는 중입니다. 잠시만요.'); return; }
+    var mean = String(q.mean || '').trim();
+    var srcText = mean || q.en;
+    var fromKey = mean ? 'ko' : 'en';
+    var m = addMessage({ dir: 'out', src: srcText, dst: '', kind: 'quick', pending: true, from: fromKey, to: pk });
+    state.busy = true;
+    setStatus('thinking');
+    translate(srcText, fromKey, pk).then(function (out) {
+      state.busy = false;
+      updateMessage(m.id, { pending: false, dst: out, error: '' });
+      if (settings.ttsAuto !== false) { setStatus('speaking'); speak(out, pk); }
+      else setStatus('idle');
+      if (!state.quickHinted) {
+        state.quickHinted = true;
+        toast(langName(pk) + ' 문장을 표시했습니다. 화면을 상대에게 보여 주거나 🔊 확대 보기를 쓰세요.', 2600);
+      }
+    }).catch(function (e) {
+      state.busy = false;
+      updateMessage(m.id, { pending: false, error: friendlyError(e) });
+      setStatus('error');
+      toast('퀵문구 번역 실패 · ' + friendlyError(e), 3600);
+    });
+  }
 
   /* ───────── 퀵문구 편집 시트 ───────── */
   var qpEdit = -1;      // 수정 중인 항목 인덱스 (-1 = 없음)
@@ -2507,26 +2744,48 @@
     toast('기본 문구 8개로 복원했습니다.', 2200);
   });
 
-  /* ───────── 텍스트 입력 ───────── */
-  var inputDir = 'ko';   // ko → en 기본
+  /* ───────── 텍스트 입력 ─────────
+     기본은 자동 판별: 한글이 들어 있으면 한국어 → 상대 언어, 아니면 상대 언어 → 한국어.
+     방향 버튼을 누르면 자동 → 한국어→상대 → 상대→한국어 순으로 직접 지정한다. */
+  var inputMode = 'auto';   // 'auto' | 'ko' | 'partner'
+  function hasHangul(s) { return /[\uAC00-\uD7A3\u1100-\u11FF\u3130-\u318F]/.test(String(s || '')); }
+  function autoDir(text) { return hasHangul(text) ? 'out' : 'in'; }
+  function dirLabel(dir) {
+    var S = LANGS[partnerKey()].short;
+    return dir === 'out' ? '한→' + S : S + '→한';
+  }
   function paintDir() {
-    $('dirBtn').textContent = inputDir === 'ko' ? '한→영' : '영→한';
-    $('textInput').placeholder = inputDir === 'ko'
-      ? '한국어로 입력하면 영어로 번역합니다'
-      : 'Type English → Korean';
+    var P = LANGS[partnerKey()];
+    var el = $('textInput');
+    var dir = inputMode === 'auto' ? autoDir(el ? el.value : '') : (inputMode === 'ko' ? 'out' : 'in');
+    $('dirBtn').textContent = inputMode === 'auto'
+      ? ((el && !el.value) ? '자동' : '자동 · ' + dirLabel(dir))
+      : dirLabel(dir);
+    $('dirBtn').setAttribute('title', inputMode === 'auto'
+      ? '한글이면 한국어→' + P.name + ', 아니면 ' + P.name + '→한국어 (탭하면 직접 지정)'
+      : '탭하면 자동 판별로 돌아갑니다');
+    if (el) el.placeholder = inputMode === 'auto'
+      ? '한국어/' + P.name + ' 자동 번역'
+      : (inputMode === 'ko' ? '한국어로 입력하면 ' + P.name + '로 번역합니다' : P.name + '로 입력하면 한국어로 번역합니다');
   }
   $('dirBtn').addEventListener('click', function () {
-    inputDir = inputDir === 'ko' ? 'en' : 'ko';
+    inputMode = inputMode === 'auto' ? 'ko' : (inputMode === 'ko' ? 'partner' : 'auto');
     paintDir();
+    toast(inputMode === 'auto'
+      ? '자동 판별 — 한글이면 한국어→' + langName(partnerKey()) + ', 아니면 ' + langName(partnerKey()) + '→한국어'
+      : (inputMode === 'ko' ? '한국어 → ' + langName(partnerKey()) : langName(partnerKey()) + ' → 한국어'), 2400);
   });
   function submitText() {
     var el = $('textInput');
     var v = cleanOut(el.value);
     if (!v) return;
     el.value = '';
+    var dir = inputMode === 'auto' ? autoDir(v) : (inputMode === 'ko' ? 'out' : 'in');
     stopListening();
-    handleUtterance(v, inputDir === 'ko' ? 'out' : 'in', 'text');
+    handleUtterance(v, dir, 'text');
+    paintDir();
   }
+  $('textInput').addEventListener('input', paintDir);
   $('sendBtn').addEventListener('click', submitText);
   $('textInput').addEventListener('keydown', function (ev) {
     if (ev.key !== 'Enter') return;
@@ -2541,9 +2800,15 @@
     startListening('ko');
   });
   $('btnEn').addEventListener('click', function () {
-    if (state.listening === 'en') { stopListening(); setStatus('idle'); return; }
+    var pk = partnerKey();
+    if (state.listening === pk) { stopListening(); setStatus('idle'); return; }
     pendingNextLang = null;
-    startListening('en');
+    startListening(pk);
+  });
+
+  /* 상대 언어 선택 — 이 기기(localStorage)에 저장해 다음 실행에도 유지 */
+  $('partnerSel').addEventListener('change', function () {
+    setPartner(this.value);
   });
 
   /* ───────── 토글 ───────── */
@@ -2566,7 +2831,7 @@
     settings.autoTurn = !settings.autoTurn; saveSettings(); paintToggles();
     toast(settings.autoTurn ? '연속 대화 켜짐 — 내 말 ↔ 상대 말 자동 전환' : '연속 대화 꺼짐', 2000);
     if (settings.autoTurn && !state.listening && !state.busy) {
-      var next = state.messages.length ? (state.messages[state.messages.length - 1].dir === 'out' ? 'en' : 'ko') : 'ko';
+      var next = state.messages.length ? (state.messages[state.messages.length - 1].dir === 'out' ? partnerKey() : 'ko') : 'ko';
       if (srSupported()) startListening(next);
     }
   });
@@ -2608,13 +2873,15 @@
        · 자동 감지 → Groq Whisper(whisper-large-v3-turbo) 4.5초 녹음 청크
        · 확정된 문장마다 현재 번역 엔진(기본/Groq/Gemini/OpenAI)으로 번역해 자막 누적
      ═════════════════════════════════════════════════════ */
-  var SUB_LANGS = {
-    en: { key: 'en', name: '영어', code: 'en-US', tr: 'en' },
-    ja: { key: 'ja', name: '일본어', code: 'ja-JP', tr: 'ja' },
-    zh: { key: 'zh', name: '중국어', code: 'zh-CN', tr: 'zh-CN' },
-    ko: { key: 'ko', name: '한국어', code: 'ko-KR', tr: 'ko' },
-    auto: { key: 'auto', name: '자동 감지', code: '', tr: 'auto' }
-  };
+  // 자막 모드 언어 설정 — 공통 LANGS에서 만들고 'auto'(자동 감지)만 더한다
+  var SUB_LANGS = (function () {
+    var o = {};
+    LANG_ORDER.forEach(function (k) {
+      o[k] = { key: k, name: LANGS[k].name, code: LANGS[k].code, tr: k };
+    });
+    o.auto = { key: 'auto', name: '자동 감지', code: '', tr: 'auto' };
+    return o;
+  })();
   var SUB_SIZES = { normal: '보통', large: '크게', xlarge: '특대' };
   var SUB_SIZE_ORDER = ['normal', 'large', 'xlarge'];
   var WHISPER_CHUNK_MS = 4500;       // 청크 길이
@@ -2629,9 +2896,10 @@
   var SUB_CHUNK_SILENT_PEAK = 0.02;
   var WHISPER_LANGS = {
     english: { tr: 'en', name: '영어' }, korean: { tr: 'ko', name: '한국어' },
-    japanese: { tr: 'ja', name: '일본어' }, chinese: { tr: 'zh-CN', name: '중국어' },
+    japanese: { tr: 'ja', name: '일본어' }, chinese: { tr: 'zh', name: '중국어' },
     spanish: { tr: 'es', name: '스페인어' }, french: { tr: 'fr', name: '프랑스어' },
-    german: { tr: 'de', name: '독일어' }, russian: { tr: 'ru', name: '러시아어' }
+    german: { tr: 'de', name: '독일어' }, vietnamese: { tr: 'vi', name: '베트남어' },
+    thai: { tr: 'th', name: '태국어' }
   };
 
   var SUB = {
@@ -2701,7 +2969,7 @@
       SUB.ttsQ.shift();
       SUB.ttsDropped++;
     }
-    SUB.ttsQ.push({ text: t, lang: lang === 'en' ? 'en' : 'ko', force: !!force });
+    SUB.ttsQ.push({ text: t, lang: isLang(lang) ? lang : 'ko', force: !!force });
     subTtsPump();
   }
 
@@ -2734,7 +3002,7 @@
       var piece = chunks[i++];
       var u;
       try { u = new SpeechSynthesisUtterance(piece); } catch (e) { finish(); return; }
-      u.lang = item.lang === 'en' ? 'en-US' : 'ko-KR';
+      u.lang = bcp(item.lang);
       var v = pickVoice(item.lang);
       if (v) u.voice = v;
       u.rate = rate;
@@ -2768,7 +3036,7 @@
     if (!line || line.pending || !line.dst || line.err) return false;
     if (!subTtsSupported()) return false;
     subTtsStop();
-    SUB.ttsQ.push({ text: line.dst, lang: line.to === 'en' ? 'en' : 'ko', force: true });
+    SUB.ttsQ.push({ text: line.dst, lang: isLang(line.to) ? line.to : 'ko', force: true });
     subTtsPump();
     var el = $('subLines').querySelector('[data-line="' + line.id + '"]');
     if (el) {
@@ -3267,6 +3535,12 @@
         toast('마이크를 찾을 수 없습니다. 다른 앱이 마이크를 쓰고 있는지 확인하세요.', 4600);
         return;
       }
+      if (code === 'language-not-supported' || code === 'language_not_supported') {
+        SUB.interim = ''; subPaintInterim();
+        subStop(true);
+        toast('이 기기의 음성 인식이 ' + cfg.name + '를 지원하지 않습니다. 🤖 자동 감지(Groq Whisper)를 고르면 ' + cfg.name + '도 받아쓸 수 있습니다(Groq 키 필요).', 6400);
+        return;
+      }
       toast('음성 인식 오류: ' + (code || 'unknown'), 3200);
     };
     r.onend = function () {
@@ -3322,7 +3596,7 @@
     var key = (settings.groqKey || '').trim();
     if (!key) {
       subStop(true);
-      toast('자동 감지에는 Groq API 키가 필요합니다. 설정 → Groq에 gsk_ 키를 넣거나, 위에서 영어·일본어·중국어·한국어를 직접 고르세요.', 6800);
+      toast('자동 감지에는 Groq API 키가 필요합니다. 설정 → Groq에 gsk_ 키를 넣거나, 위에서 듣기 언어를 직접 고르세요.', 6800);
       return;
     }
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia || !window.MediaRecorder) {
@@ -3474,7 +3748,7 @@
     settings.subLang = key;
     if (key === 'auto') {
       if (!(settings.groqKey || '').trim()) {
-        toast('자동 감지에는 Groq API 키가 필요합니다. 설정 → Groq에 gsk_ 키를 넣거나, 위에서 영어·일본어·중국어·한국어를 직접 고르세요.', 6800);
+        toast('자동 감지에는 Groq API 키가 필요합니다. 설정 → Groq에 gsk_ 키를 넣거나, 위에서 듣기 언어를 직접 고르세요.', 6800);
         return;
       }
       if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia || !window.MediaRecorder) {
@@ -3793,6 +4067,10 @@
     syncSettingsUI();
     updateEngineLabel();
     paintToggles();
+    fillPartnerSelect();
+    paintPartner();
+    paintSubLangs();
+    paintSubSize();
     paintSubTTS();
     subTtsStop();
     $('testResult').textContent = '';
@@ -3808,9 +4086,9 @@
 
   /* ───────── 초기화 ───────── */
   loadSettings();
-  paintDir();
+  fillPartnerSelect();
+  paintPartner();
   paintToggles();
-  paintMic();
   updateEngineLabel();
   renderAll();
   setStatus('idle');
@@ -3852,6 +4130,52 @@
     },
     clear: function () { state.messages = []; renderAll(); },
     get settings() { return settings; },
+    langs: function () {
+      return { order: LANG_ORDER.slice(), partners: PARTNER_ORDER.slice(), table: LANGS };
+    },
+    // 1:1 대화 — 상대 언어·방향·TTS·번역 확인용
+    partner: function () {
+      return {
+        key: partnerKey(),
+        name: langName(partnerKey()),
+        flag: $('partnerFlag') ? $('partnerFlag').textContent : '',
+        label: $('partnerLabel') ? $('partnerLabel').textContent : '',
+        subKo: $('subKo') ? $('subKo').textContent : '',
+        subEn: $('subEn') ? $('subEn').textContent : '',
+        placeholder: $('textInput') ? $('textInput').placeholder : '',
+        dirBtn: $('dirBtn') ? $('dirBtn').textContent : '',
+        quickHint: $('quickHint') ? $('quickHint').textContent : '',
+        select: $('partnerSel') ? $('partnerSel').value : '',
+        hasVoice: hasVoiceFor(partnerKey()),
+        voice: pickVoice(partnerKey()) ? pickVoice(partnerKey()).name + ' / ' + pickVoice(partnerKey()).lang : ''
+      };
+    },
+    setPartner: function (k) { setPartner(k, true); return partnerKey(); },
+    speakTest: function (text, k) { return speak(text, k || partnerKey()); },
+    ttsLog: function () { return CHAT_TTS_LOG.slice(-8); },
+    srLang: function () { return { lang: state.srLang || '', listening: state.listening || null }; },
+    translate: function (text, from, to) { return translate(text, from, to); },
+    prompt: function (from, to) { return sysPrompt(from, to); },
+    detect: function (t) { return autoDir(t); },
+    dirMode: function () { return inputMode; },
+    cycleDir: function () { $('dirBtn').click(); return inputMode; },
+    type: function (t) {
+      var el = $('textInput'); el.value = t; paintDir();
+      return { dir: autoDir(t), btn: $('dirBtn').textContent, placeholder: el.placeholder };
+    },
+    submit: function (t) { $('textInput').value = t; submitText(); },
+    quick: function (i) {
+      var el = $('quickBody').querySelector('[data-q="' + Number(i) + '"]');
+      if (!el) return false; el.click(); return true;
+    },
+    bubbles: function () {
+      return state.messages.map(function (m) {
+        return { dir: m.dir, from: m.from, to: m.to, src: m.src, dst: m.dst, pending: m.pending, error: m.error, kind: m.kind };
+      });
+    },
+    bubbleMeta: function () {
+      return Array.prototype.map.call(tl.querySelectorAll('.b-meta'), function (e) { return e.textContent; });
+    },
     readKeyInputs: readKeyInputs,
     pickModel: function (models) { return pickGeminiModel(models || []); },
     modelInfo: function () {
@@ -3876,7 +4200,14 @@
     subtitle: {
       open: function () { setView('sub'); },
       close: function () { setView('chat'); },
-      setLang: function (k) { if (SUB_LANGS[k]) { settings.subLang = k; saveSettings(); paintSubLangs(); paintSubHint(); } },
+      setLang: function (k) {
+        if (!SUB_LANGS[k]) return false;
+        settings.subLang = k; saveSettings(); paintSubLangs(); paintSubHint();
+        return k;
+      },
+      langInfo: function () {
+        return { key: settings.subLang, name: subCfg().name, code: subCfg().code, chips: Array.prototype.map.call($('subLangs').children, function (b) { return b.getAttribute('data-lang'); }) };
+      },
       setSize: function (s) { if (SUB_SIZES[s]) { settings.subSize = s; saveSettings(); paintSubSize(); } },
       setTTS: function (on) {
         settings.subTTS = !!on; saveSettings(); paintSubTTS();
