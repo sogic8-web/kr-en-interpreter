@@ -972,8 +972,8 @@
     </div>
 
     <div class="sub-hint" id="subHint" role="button" tabindex="0" aria-label="강연·스피커 수음 안내">
-      <span id="subHintText">🎙 강연·TV/PC 스피커 수음은 <b>🤖 자동 감지(Groq Whisper)</b>가 훨씬 안정적입니다</span>
-      <span class="sh-go" id="subHintGo">전환</span>
+      <span id="subHintText">🎙 지금은 기기 음성 인식으로 듣습니다 — <b>Groq 키를 넣으면 모든 언어에서 고정밀 Whisper 인식</b>이 작동합니다</span>
+      <span class="sh-go" id="subHintGo">설정</span>
     </div>
 
     <div class="sub-stage" id="subStage">
@@ -981,14 +981,14 @@
         <div class="se-ico">🎬</div>
         <h3>강연·대화를 실시간 자막으로</h3>
         <p>듣기 언어를 고르고 <b>▶ 자막 시작</b>을 누르면<br>들리는 말을 한 문장씩 번역해 아래로 쌓아 줍니다.</p>
-        <p class="se-note">🎙 강연·TV/PC 스피커 소리는 <b>🤖 자동 감지(Groq Whisper)</b>가 가장 잘 잡습니다.<br>※ 같은 폰에서 재생 중인 영상 소리는 안드로이드 정책상 잡히지 않으니, TV·PC 스피커나 현장 육성으로 테스트해 주세요.</p>
+        <p class="se-note">🎙 강연·TV/PC 스피커 소리는 <b>Whisper</b>가 가장 잘 잡습니다. 설정에 Groq 키를 넣으면 <b>어떤 언어를 골라도</b> Whisper로 받아씁니다.<br>※ 같은 폰에서 재생 중인 영상 소리는 안드로이드 정책상 잡히지 않으니, TV·PC 스피커나 현장 육성으로 테스트해 주세요.</p>
       </div>
       <div class="sub-lines" id="subLines"></div>
       <button class="sub-jump" id="subJump">↓ 최신 자막</button>
     </div>
 
     <div class="sub-interim" id="subInterim">
-      <span class="sub-interim-lbl" id="subInterimLbl">인식 중</span>
+      <span id="subInterimLbl" class="sub-interim-lbl">인식 중</span>
       <span class="sub-interim-text" id="subInterimText"></span>
     </div>
 
@@ -3448,6 +3448,10 @@
     }
     if (subIsNoise(t)) return;
     var prevSrc = SUB.lines.length ? SUB.lines[SUB.lines.length - 1].src : '';
+    // 이미 버퍼에 들어 있는 말이 그대로 다시 오면(청크 되풀이) 버린다
+    var tKey = subNormKey(t);
+    var bufKey = subNormKey(SUB.buf);
+    if (tKey.length >= 6 && bufKey && (bufKey === tKey || bufKey.slice(-tKey.length) === tKey)) return;
     t = subStripOverlap(t, (SUB.buf || '') + ' ' + prevSrc);
     if (!t) return;
     SUB.recent.push(subNormKey(t));
@@ -4242,7 +4246,7 @@
   $('subHint').addEventListener('click', function () {
     var hasKey = !!(settings.groqKey || '').trim();
     if (!hasKey) {
-      toast('설정 → 엔진에서 Groq를 고르고 gsk_ 키를 넣으면 🤖 자동 감지로 TV·PC 스피커 수음이 가능합니다.', 5200);
+      toast('설정 → 엔진에서 Groq를 고르고 gsk_ 키를 넣으면 모든 언어에서 고정밀 Whisper 인식이 작동합니다.', 5200);
       syncSettingsUI();
       openModal('settingsModal');
       return;
