@@ -1926,7 +1926,7 @@
     var sys = sysPrompt(from, to) + ' ' + subAsrInstruction(to);
     if (ctx && ctx.length) {
       var lines = ctx.map(function (c, i) {
-        return (i + 1) + ') ' + (LANG_EN[c.from] || c.from) + ': ' + c.src + '\n   → ' + (LANG_EN[c.to] || c.to) + ': ' + c.dst;
+        return (i + 1) + ') ' + (LANG_EN[c.from] || c.from) + ': ' + c.src + '\n   → ' + (LANG_EN[c.to] || c.to) + ': ' + (c.dst || '(being translated)');
       });
       sys += ' Preceding subtitle lines (oldest first) for context — keep names, terms and the flow consistent with them:\n' + lines.join('\n');
     }
@@ -3557,13 +3557,13 @@
     subScrollToEnd(false);
   }
 
-  // 번역기에 넘길 문맥 — 최근 확정 자막 2문장(원문+번역문)
+  // 번역기에 넘길 문맥 — 최근 자막 2문장(원문+번역문). 방금 올린 문장은 번역 전이라 원문만 넘긴다
   function subContextLines() {
     var out = [];
     for (var i = SUB.lines.length - 1; i >= 0 && out.length < SUB_CTX_LINES; i--) {
       var l = SUB.lines[i];
-      if (!l || l.pending || l.err || !l.dst || !l.src) continue;
-      out.unshift({ src: l.src, dst: l.dst, from: l.from, to: l.to });
+      if (!l || l.err || !l.src) continue;
+      out.unshift({ src: l.src, dst: l.dst || '', from: l.from, to: l.to });
     }
     return out;
   }
