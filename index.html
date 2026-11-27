@@ -86,14 +86,15 @@
     line-height:1.2;white-space:nowrap;color:var(--ink);
   }
   .engine-chip{
-    display:inline-flex;align-items:center;gap:4px;
+    display:block;
     max-width:100%;min-width:0;
     font-size:9.5px;font-weight:700;letter-spacing:-.1px;
     color:var(--ink-3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
   }
   .engine-chip::before{
-    content:"";width:5px;height:5px;border-radius:50%;flex:0 0 5px;
-    background:var(--green);
+    content:"";display:inline-block;vertical-align:1px;
+    width:5px;height:5px;border-radius:50%;
+    background:var(--green);margin-right:4px;
   }
   .h-actions{display:flex;align-items:center;gap:5px;flex:0 0 auto;}
   .icon-btn{
@@ -945,6 +946,7 @@
     .composer{margin-bottom:8px;}
     .mic{height:58px;}
     .toast{bottom:calc(58px + 76px);}
+    .sheet{max-width:620px;margin:0 auto;border-radius:20px 20px 0 0;}
     .bubble{max-width:78%;}
   }
   @media (max-width:359px){
@@ -2044,14 +2046,20 @@
     var code = String((e && e.code) || '').toLowerCase();
     var type = String((e && e.type) || '').toLowerCase();
     var raw = String((e && (e.raw || e.message)) || '');
-    var tags = code + ' ' + type + ' ' + raw.toLowerCase();
-    if (/insufficient_quota|credit_balance_exhausted|billing_not_active|billing_hard_limit|insufficient_credits|payment_required|exceeded your current quota|no credits remaining/.test(tags)) return 'credit';
-    if (/resource_exhausted/.test(type) || /resource_exhausted/.test(code)) {
-      // Gemini 무료 등급의 RESOURCE_EXHAUSTED는 '호출 한도' — 크레딧 안내가 아니라 재시도 안내
-      return /billing|credit balance|payment/i.test(raw) ? 'credit' : 'quota';
+    var low = (code + ' ' + type + ' ' + raw).toLowerCase();
+    var engine = (e && e.engine) || settings.engine;
+    // 결제·크레딧 문제를 가리키는 확정 코드 (OpenAI 중심)
+    if (/insufficient_quota|credit_balance_exhausted|billing_not_active|billing_hard_limit|insufficient_credits|payment_required|billing_not_enabled|no credits remaining/.test(low)) return 'credit';
+    if (engine === 'gemini') {
+      // Gemini 429는 대부분 무료 등급의 분당·하루 요청 한도(RESOURCE_EXHAUSTED)다.
+      // 결제 계정 자체가 막힌 경우에만 크레딧 안내로 보낸다.
+      if (/billing (account|is|not)|billing_disabled|billing.*(closed|disabled|not active)/.test(raw.toLowerCase())) return 'credit';
+      if (/quota|resource_exhausted|rate|exceeded/.test(low)) return 'quota';
+      return '';
     }
-    if (/rate_limit|rate limit|too_many_requests|tokens_per_min|requests_per_min|per minute/.test(tags)) return 'rate';
-    if (/billing|credit balance|payment method|not active/i.test(raw)) return 'credit';
+    if (/rate_limit|rate limit|too_many_requests|tokens_per_min|requests_per_min|per minute/.test(low)) return 'rate';
+    if (engine === 'openai' && /exceeded your current quota|check your plan and billing|add a payment method|credit balance/.test(raw.toLowerCase())) return 'credit';
+    if (engine === 'groq') return 'rate';
     return '';
   }
 
