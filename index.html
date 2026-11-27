@@ -4481,7 +4481,12 @@ window.addEventListener('unhandledrejection', function (e) {
   Array.prototype.forEach.call(document.querySelectorAll('.modal'), function (m) {
     m.addEventListener('click', function (ev) { if (ev.target === m) m.classList.remove('open'); });
   });
-  $('btnSettings').addEventListener('click', function () { syncSettingsUI(); openModal('settingsModal'); });
+  $('btnSettings').addEventListener('click', function () {
+    syncSettingsUI();
+    // 지난번 연결 테스트 결과가 남아 있으면 오해를 부르므로 열 때 비운다
+    if ($('testResult')) { $('testResult').textContent = ''; $('testResult').className = 'status-inline'; }
+    openModal('settingsModal');
+  });
   $('btnHelp').addEventListener('click', function () { openModal('helpModal'); });
   if ($('btnHelpIn')) $('btnHelpIn').addEventListener('click', function () {
     closeModal('settingsModal');
