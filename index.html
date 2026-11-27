@@ -2695,7 +2695,7 @@ window.addEventListener('unhandledrejection', function (e) {
       else setStatus('idle');
       if (!state.quickHinted) {
         state.quickHinted = true;
-        toast('영어 문장을 표시했습니다. 화면을 상대에게 보여 주거나 🔊 확대 보기를 쓰세요.', 2600);
+        toast('영어 문장을 표시했습니다. 화면을 상대에게 보여 주거나 🔍 확대 보기를 쓰세요.', 2600);
       }
       return;
     }
@@ -2713,7 +2713,7 @@ window.addEventListener('unhandledrejection', function (e) {
       else setStatus('idle');
       if (!state.quickHinted) {
         state.quickHinted = true;
-        toast(langName(pk) + ' 문장을 표시했습니다. 화면을 상대에게 보여 주거나 🔊 확대 보기를 쓰세요.', 2600);
+        toast(langName(pk) + ' 문장을 표시했습니다. 화면을 상대에게 보여 주거나 🔍 확대 보기를 쓰세요.', 2600);
       }
     }).catch(function (e) {
       state.busy = false;
