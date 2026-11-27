@@ -253,7 +253,8 @@
   .empty li b{color:var(--brand-d);font-weight:800;}
   .empty li .a-flag{font-size:13px;line-height:1.3;}
 
-  /* 말풍선 */
+  /* 말풍선 — 대화가 적을 때는 입력줄 가까이(아래)에 붙는다 */
+  .timeline > .msg:first-child{margin-top:auto;}
   .msg{display:flex;animation:pop .18s ease-out;}
   .msg.out{justify-content:flex-end;}
   .msg.in{justify-content:flex-start;}
