@@ -1348,6 +1348,14 @@
 
 
 <script>
+/* 런타임 오류 수집(검증용 · 사용자 화면에는 영향 없음) */
+window.__errors = window.__errors || [];
+window.addEventListener('error', function (e) {
+  try { window.__errors.push('error: ' + (e && e.message ? e.message : String(e))); } catch (x) { }
+});
+window.addEventListener('unhandledrejection', function (e) {
+  try { window.__errors.push('unhandledrejection: ' + String((e && e.reason && (e.reason.message || e.reason)) || '')); } catch (x) { }
+});
 /* =========================================================
    한·영 동시통역 대화앱 (단독 실행형, 의존성 없음)
    ========================================================= */
@@ -4608,11 +4616,11 @@
   subPaintStatus();
   setView('chat');
 
-  if (settings.quickOpen) {
-    $('quick').classList.add('open');
-    $('quickHead').setAttribute('aria-expanded', 'true');
-    if ($('quickFab')) $('quickFab').classList.add('on');
-  }
+  // 퀵문구 패널은 접힌 상태로 시작한다 — 대화창(번역창)에 세로 공간을 최대로 주기 위해
+  // (기존 저장값 quickOpen은 남겨 두되, 시작 시 자동으로 펼치지 않는다)
+  $('quick').classList.remove('open');
+  $('quickHead').setAttribute('aria-expanded', 'false');
+  if ($('quickFab')) $('quickFab').classList.remove('on');
   paintChatTools();
 
   if (!srSupported()) {
